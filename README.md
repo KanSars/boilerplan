@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Boilerplan AI v0
 
-## Getting Started
+Boilerplan AI v0 — runnable-приложение для компоновки котельной с доменной моделью в основе. UI приложения сейчас на русском языке. Проект использует Next.js, React, TypeScript и SVG-редактор плана. Вся доменная геометрия хранится в миллиметрах; перевод в пиксели выполняется только на уровне UI.
 
-First, run the development server:
+## Чем Проект Не Является
+
+Это не сертифицированный инженерный инструмент и не замена инженеру-проектировщику котельных. Приложение не выполняет реальные гидравлические расчёты и не гарантирует соответствие ГОСТ, СП, СНиП, EN, DIN или любым другим юридическим, пожарным, газовым, вентиляционным, строительным или производственным требованиям.
+
+## Установка
+
+```bash
+npm install
+```
+
+## Запуск
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте локальный URL, который напечатает Next.js, обычно `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Тесты
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test
+```
 
-## Learn More
+## Как Пользоваться
 
-To learn more about Next.js, take a look at the following resources:
+Задайте ширину, длину и высоту помещения в метрах. Добавьте котлы и коллекторы из тестового каталога. Перетаскивайте оборудование на SVG-плане, выбирайте элементы для изменения обозначения или поворота на 90 градусов. Чтобы удалить выбранный элемент, нажмите кнопку `Удалить элемент` в панели свойств или клавишу `Delete`/`Backspace` вне текстового поля.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+После компоновки можно построить предварительные трассы труб, просмотреть отчёт проверки и экспортировать JSON проекта, SVG-чертёж или CSV-ведомость оборудования. При удалении оборудования связанные трассы труб автоматически удаляются, а проверка запускается заново.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Текущая Структура
 
-## Deploy on Vercel
+Архитектура остаётся доменно-ориентированной и немного приближена к Feature-Sliced Design без большого рискованного рефакторинга:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `src/app`: Next.js routes и глобальная оболочка приложения.
+- `src/widgets/boiler-room-editor`: главный виджет, который собирает сценарий редактора из feature-компонентов.
+- `src/features/boiler-room-editor`: UI-панели и SVG-редактор для текущего вертикального среза.
+- `src/domain`: независимая доменная модель, геометрия, проверка, маршруты, экспортные интерфейсы и helper удаления оборудования.
+- `src/infrastructure`: тестовый каталог, демо-профиль правил, роутер труб, экспортёры и mock AI adapters.
+- `src/lib`: общие утилиты. TODO: при следующем безопасном рефакторинге перенести в `src/shared/lib`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Полный FSD-переезд пока намеренно не сделан: текущая задача была про исправление runnable vertical slice, а не про крупную смену структуры. Следующий безопасный шаг — разделить `features/boiler-room-editor` на отдельные slices вроде `room-settings`, `equipment-catalog`, `equipment-deletion`, `pipe-routing`, `project-export` и `validation-report`.
+
+## Replacement Points
+
+- Заменить `MockEquipmentCatalog` на каталог производителей, parsed datasheets или внутреннюю базу.
+- Заменить `DemoInternalStandardsProfile` на реальные профили стандартов и правила компании/производителя.
+- Заменить `SimpleOrthogonalPipeRouter` на роутер с обходом коллизий, ограничениями, уклонами, опорами и constructability-логикой.
+- Заменить `MockPipeSizingService` на сервис гидравлического расчёта.
+- Добавить реальные DXF, DWG, IFC и Revit exporters на местах существующих placeholders.
+- Заменить mock AI adapters на реальные OpenAI/Codex/agentic workflows через существующие интерфейсы.
+
+## Известные Ограничения
+
+- v0 использует тестовые данные оборудования.
+- v0 использует условные placeholder-правила зон обслуживания.
+- v0 строит трассы труб упрощённо и детерминированно.
+- v0 не рассчитывает диаметры труб.
+- v0 не покрывает полную MEP/BIM-логику, рабочую документацию и реальную проверку нормативов.
+- Поворот поддержан для прямоугольников и точек подключения на 0, 90, 180 и 270 градусов, но семантика зон обслуживания остаётся упрощённой v0-моделью.
