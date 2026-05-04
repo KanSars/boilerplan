@@ -1,74 +1,67 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
 import type { EquipmentInstance } from "@/domain/equipment/EquipmentInstance";
-import type { Project } from "@/domain/project/Project";
-import { removeEquipmentInstance } from "@/domain/project/removeEquipmentInstance";
-import { ValidationEngine } from "@/domain/validation/ValidationEngine";
 import { ExportPanel } from "@/features/boiler-room-editor/ExportPanel";
 import { EquipmentCatalogPanel } from "@/features/boiler-room-editor/EquipmentCatalogPanel";
 import { LayoutSvgEditor } from "@/features/boiler-room-editor/LayoutSvgEditor";
+import { PrincipleSchematicView } from "@/features/boiler-room-editor/PrincipleSchematicView";
 import { PropertiesPanel } from "@/features/boiler-room-editor/PropertiesPanel";
 import { RoomSettingsPanel } from "@/features/boiler-room-editor/RoomSettingsPanel";
 import { ValidationPanel } from "@/features/boiler-room-editor/ValidationPanel";
 import { MockAiValidationExplainer } from "@/infrastructure/ai/MockAiValidationExplainer";
-import { MockEquipmentCatalog } from "@/infrastructure/equipment-catalogs/MockEquipmentCatalog";
 import { CsvEquipmentScheduleExporter } from "@/infrastructure/exporters/CsvEquipmentScheduleExporter";
 import { JsonProjectExporter } from "@/infrastructure/exporters/JsonProjectExporter";
 import { SvgProjectExporter } from "@/infrastructure/exporters/SvgProjectExporter";
 import { SimpleOrthogonalPipeRouter } from "@/infrastructure/piping/SimpleOrthogonalPipeRouter";
-import { DemoInternalStandardsProfile } from "@/infrastructure/standards/DemoInternalStandardsProfile";
 import { downloadTextFile } from "@/lib/download";
 import { createId } from "@/lib/ids";
+import { equipmentDefinitions } from "@/shared/config/equipmentDefinitions";
+import { clearSelection, selectEquipmentInstance, setViewLayout } from "@/store/editorSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  addEquipmentInstance,
+  deleteEquipmentInstance,
+  setPipingRoutes,
+  setProjectName,
+  setRoom,
+  updateEquipmentInstance,
+} from "@/store/projectSlice";
+import {
+  selectProject,
+  selectSelectedEquipmentDefinition,
+  selectSelectedEquipmentInstance,
+  selectSelectedEquipmentInstanceId,
+  selectSystemConnections,
+  selectValidationIssues,
+  selectViewLayout,
+} from "@/store/selectors";
 
-const catalog = new MockEquipmentCatalog();
-const equipmentDefinitions = catalog.listDefinitions();
-const validationEngine = new ValidationEngine(DemoInternalStandardsProfile);
 const pipeRouter = new SimpleOrthogonalPipeRouter();
 const jsonExporter = new JsonProjectExporter();
 const svgExporter = new SvgProjectExporter();
 const csvExporter = new CsvEquipmentScheduleExporter();
 const aiExplainer = new MockAiValidationExplainer();
-
-const createInitialProject = (): Project => ({
-  id: "project_v0",
-  name: "Котельная v0",
-  units: "mm",
-  room: { widthMm: 8000, lengthMm: 6000, heightMm: 3000, origin: { xMm: 0, yMm: 0 } },
-  equipmentInstances: [
-    { id: "inst_supply_header", definitionId: "supply-header", position: { xMm: 900, yMm: 700 }, rotationDeg: 0, label: "Коллектор подачи" },
-    { id: "inst_return_header", definitionId: "return-header", position: { xMm: 900, yMm: 1250 }, rotationDeg: 0, label: "Коллектор обратки" },
-    { id: "inst_boiler_1", definitionId: "boiler-250kw", position: { xMm: 1400, yMm: 3300 }, rotationDeg: 0, label: "B-1" },
-  ],
-  pipingRoutes: [],
-  validationIssues: [],
-  metadata: { version: "v0", catalog: "mock" },
-});
+const exportContext = { equipmentDefinitions };
 
 export function BoilerRoomEditor() {
-  const [project, setProject] = useState<Project>(() => {
-    const initial = createInitialProject();
-    return { ...initial, validationIssues: validationEngine.validate(initial, { equipmentDefinitions }) };
-  });
-  const [selectedId, setSelectedId] = useState<string>("inst_boiler_1");
-
-  const selectedInstance = project.equipmentInstances.find((instance) => instance.id === selectedId);
-  const selectedDefinition = selectedInstance
-    ? equipmentDefinitions.find((definition) => definition.id === selectedInstance.definitionId)
-    : undefined;
-  const aiExplanation = useMemo(() => aiExplainer.explain(project.validationIssues), [project.validationIssues]);
-
-  const updateProject = (next: Project) => {
-    const validationIssues = validationEngine.validate(next, { equipmentDefinitions });
-    setProject({ ...next, validationIssues });
-  };
+  const dispatch = useAppDispatch();
+  const project = useAppSelector(selectProject);
+  const selectedId = useAppSelector(selectSelectedEquipmentInstanceId);
+  const selectedInstance = useAppSelector(selectSelectedEquipmentInstance);
+  const selectedDefinition = useAppSelector(selectSelectedEquipmentDefinition);
+  const validationIssues = useAppSelector(selectValidationIssues);
+  const systemConnections = useAppSelector(selectSystemConnections);
+  const viewLayout = useAppSelector(selectViewLayout);
+  const projectWithValidation = useMemo(() => ({ ...project, validationIssues }), [project, validationIssues]);
+  const aiExplanation = useMemo(() => aiExplainer.explain(validationIssues), [validationIssues]);
 
   const deleteSelectedEquipment = useCallback(() => {
     if (!selectedId) return;
-    updateProject(removeEquipmentInstance(project, selectedId));
-    setSelectedId("");
-  }, [project, selectedId]);
+    dispatch(deleteEquipmentInstance(selectedId));
+    dispatch(clearSelection());
+  }, [dispatch, selectedId]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -78,8 +71,7 @@ export function BoilerRoomEditor() {
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         (target instanceof HTMLElement && target.isContentEditable);
-      if (isTextInput) return;
-      if (!selectedId) return;
+      if (isTextInput || !selectedId) return;
       event.preventDefault();
       deleteSelectedEquipment();
     };
@@ -97,22 +89,13 @@ export function BoilerRoomEditor() {
     const instance: EquipmentInstance = {
       id: createId("equipment"),
       definitionId: definition.id,
-      position: { xMm: 900 + sameDefinitionCount * 350, yMm: definition.category === "header" ? 550 + sameDefinitionCount * 500 : 3000 + boilerCount * 350 },
+      position: { xMm: 900 + sameDefinitionCount * 350, yMm: definition.category === "header" ? 450 + sameDefinitionCount * 900 : 3000 + boilerCount * 350 },
       rotationDeg: 0,
       label: definition.category === "boiler" ? `B-${boilerCount}` : `${definition.name} ${sameDefinitionCount}`,
     };
-    setSelectedId(instance.id);
-    updateProject({ ...project, equipmentInstances: [...project.equipmentInstances, instance], pipingRoutes: [] });
+    dispatch(addEquipmentInstance(instance));
+    dispatch(selectEquipmentInstance(instance.id));
   };
-
-  const updateInstance = (id: string, patch: Partial<EquipmentInstance>) => {
-    updateProject({
-      ...project,
-      equipmentInstances: project.equipmentInstances.map((instance) => instance.id === id ? { ...instance, ...patch } : instance),
-    });
-  };
-
-  const exportContext = { equipmentDefinitions };
 
   return (
     <main className="app-shell">
@@ -120,44 +103,74 @@ export function BoilerRoomEditor() {
         <RoomSettingsPanel
           projectName={project.name}
           room={project.room}
-          onProjectNameChange={(name) => updateProject({ ...project, name })}
-          onRoomChange={(room) => updateProject({ ...project, room })}
+          onProjectNameChange={(name) => dispatch(setProjectName(name))}
+          onRoomChange={(room) => dispatch(setRoom(room))}
         />
         <EquipmentCatalogPanel definitions={equipmentDefinitions} onAddEquipment={addEquipment} />
       </aside>
 
       <section className="workspace">
         <ExportPanel
-          onGenerateRoutes={() => updateProject({ ...project, pipingRoutes: pipeRouter.generateRoutes(project, exportContext) })}
-          onValidate={() => updateProject(project)}
-          onExportJson={() => downloadTextFile("boiler-room-project.json", jsonExporter.export(project), "application/json")}
-          onExportSvg={() => downloadTextFile("boiler-room-layout.svg", svgExporter.export(project, exportContext), "image/svg+xml")}
-          onExportCsv={() => downloadTextFile("equipment-schedule.csv", csvExporter.export(project, exportContext), "text/csv")}
+          onGenerateRoutes={() => dispatch(setPipingRoutes(pipeRouter.generateRoutes(project, exportContext)))}
+          onValidate={() => undefined}
+          onExportJson={() => downloadTextFile("boiler-room-project.json", jsonExporter.export(projectWithValidation), "application/json")}
+          onExportSvg={() => downloadTextFile("boiler-room-layout.svg", svgExporter.export(projectWithValidation, exportContext), "image/svg+xml")}
+          onExportCsv={() => downloadTextFile("equipment-schedule.csv", csvExporter.export(projectWithValidation, exportContext), "text/csv")}
         />
-        <LayoutSvgEditor
-          project={project}
-          definitions={equipmentDefinitions}
-          selectedId={selectedId}
-          validationIssues={project.validationIssues}
-          onSelect={setSelectedId}
-          onMove={(id, position) => updateInstance(id, { position })}
-        />
+        <div className="view-layout-toolbar" aria-label="Расположение инженерных видов">
+          <span>Расположение экранов</span>
+          <button
+            className={viewLayout === "row" ? "active" : ""}
+            type="button"
+            onClick={() => dispatch(setViewLayout("row"))}
+          >
+            В линию
+          </button>
+          <button
+            className={viewLayout === "column" ? "active" : ""}
+            type="button"
+            onClick={() => dispatch(setViewLayout("column"))}
+          >
+            Один под другим
+          </button>
+        </div>
+        <div className={`engineering-views ${viewLayout === "column" ? "column" : "row"}`}>
+          <section className="engineering-view">
+            <h2>План помещения</h2>
+            <LayoutSvgEditor
+              project={projectWithValidation}
+              definitions={equipmentDefinitions}
+              selectedId={selectedId}
+              validationIssues={validationIssues}
+              onSelect={(id) => dispatch(selectEquipmentInstance(id))}
+              onMove={(id, position) => dispatch(updateEquipmentInstance({ id, patch: { position } }))}
+            />
+          </section>
+          <section className="engineering-view">
+            <h2>Принципиальная схема</h2>
+            <PrincipleSchematicView
+              equipmentInstances={project.equipmentInstances}
+              definitions={equipmentDefinitions}
+              systemConnections={systemConnections}
+            />
+          </section>
+        </div>
       </section>
 
       <aside className="sidebar right-sidebar">
         <PropertiesPanel
           selectedInstance={selectedInstance}
           selectedDefinition={selectedDefinition}
-          onUpdateLabel={(label) => selectedId && updateInstance(selectedId, { label })}
+          onUpdateLabel={(label) => selectedId && dispatch(updateEquipmentInstance({ id: selectedId, patch: { label } }))}
           onRotate={() => {
             if (!selectedInstance) return;
             const rotations = [0, 90, 180, 270] as const;
             const next = rotations[(rotations.indexOf(selectedInstance.rotationDeg) + 1) % rotations.length];
-            updateInstance(selectedInstance.id, { rotationDeg: next });
+            dispatch(updateEquipmentInstance({ id: selectedInstance.id, patch: { rotationDeg: next } }));
           }}
           onDelete={deleteSelectedEquipment}
         />
-        <ValidationPanel issues={project.validationIssues} aiExplanation={aiExplanation} />
+        <ValidationPanel issues={validationIssues} aiExplanation={aiExplanation} />
       </aside>
     </main>
   );
