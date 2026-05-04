@@ -8,6 +8,7 @@ type Props = {
   equipmentInstances: EquipmentInstance[];
   definitions: EquipmentDefinition[];
   systemConnections: SystemConnection[];
+  zoom: number;
 };
 
 type NodePosition = {
@@ -15,12 +16,12 @@ type NodePosition = {
   y: number;
 };
 
-export function PrincipleSchematicView({ equipmentInstances, definitions, systemConnections }: Props) {
+export function PrincipleSchematicView({ equipmentInstances, definitions, systemConnections, zoom }: Props) {
   const boilers = equipmentInstances.filter((instance) => getCategory(instance, definitions) === "boiler");
-  const supplyHeader = equipmentInstances.find((instance) =>
+  const supplyHeaders = equipmentInstances.filter((instance) =>
     getCategory(instance, definitions) === "header" && hasConnection(instance, definitions, "supply"),
   );
-  const returnHeader = equipmentInstances.find((instance) =>
+  const returnHeaders = equipmentInstances.filter((instance) =>
     getCategory(instance, definitions) === "header" && hasConnection(instance, definitions, "return"),
   );
 
@@ -28,17 +29,24 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
   boilers.forEach((boiler, index) => {
     nodePositions.set(boiler.id, { x: 90, y: 110 + index * 115 });
   });
-  if (supplyHeader) nodePositions.set(supplyHeader.id, { x: 575, y: 95 });
-  if (returnHeader) nodePositions.set(returnHeader.id, { x: 575, y: Math.max(280, 120 + boilers.length * 95) });
+  supplyHeaders.forEach((header, index) => {
+    nodePositions.set(header.id, { x: 575, y: 95 + index * 105 });
+  });
+  const returnHeaderStartY = Math.max(300, 130 + Math.max(boilers.length, supplyHeaders.length) * 105);
+  returnHeaders.forEach((header, index) => {
+    nodePositions.set(header.id, { x: 575, y: returnHeaderStartY + index * 105 });
+  });
 
-  const height = Math.max(430, 230 + boilers.length * 115);
+  const height = Math.max(430, returnHeaderStartY + Math.max(1, returnHeaders.length) * 110 + 40);
 
   return (
     <div className="schematic-frame">
-      <svg className="schematic-svg" viewBox={`0 0 760 ${height}`} role="img" aria-label="Принципиальная схема котельной">
-        <text x="24" y="34" className="schematic-title">Логические соединения</text>
+      <div className="zoom-viewport">
+        <div className="zoom-content" style={{ width: `${zoom * 100}%`, height: `${zoom * 100}%` }}>
+          <svg className="schematic-svg" viewBox={`0 0 760 ${height}`} role="img" aria-label="Принципиальная схема котельной">
+            <text x="24" y="34" className="schematic-title">Логические соединения</text>
 
-        {systemConnections.map((connection) => {
+            {systemConnections.map((connection) => {
           const from = nodePositions.get(connection.from.equipmentInstanceId);
           const to = connection.to ? nodePositions.get(connection.to.equipmentInstanceId) : undefined;
           const isSupply = connection.systemType === "supply";
@@ -76,9 +84,9 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
               </text>
             </g>
           );
-        })}
+            })}
 
-        {boilers.map((boiler) => {
+            {boilers.map((boiler) => {
           const position = nodePositions.get(boiler.id);
           if (!position) return null;
           return (
@@ -88,15 +96,21 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
               <text className="schematic-node-subtitle" x={position.x + 16} y={position.y + 58}>котёл</text>
             </g>
           );
-        })}
+            })}
 
-        {supplyHeader ? <HeaderNode instance={supplyHeader} position={nodePositions.get(supplyHeader.id)} type="supply" /> : <MissingHeader x={565} y={95} label="Нет точки подключения" />}
-        {returnHeader ? <HeaderNode instance={returnHeader} position={nodePositions.get(returnHeader.id)} type="return" /> : <MissingHeader x={565} y={Math.max(280, 120 + boilers.length * 95)} label="Нет точки подключения" />}
+            {supplyHeaders.length > 0
+              ? supplyHeaders.map((header) => <HeaderNode key={header.id} instance={header} position={nodePositions.get(header.id)} type="supply" />)
+              : <MissingHeader x={565} y={95} label="Нет точки подключения" />}
+            {returnHeaders.length > 0
+              ? returnHeaders.map((header) => <HeaderNode key={header.id} instance={header} position={nodePositions.get(header.id)} type="return" />)
+              : <MissingHeader x={565} y={returnHeaderStartY} label="Нет точки подключения" />}
 
-        {boilers.length === 0 && (
-          <text x="90" y="130" className="schematic-empty">Добавьте котёл, чтобы увидеть логические соединения.</text>
-        )}
-      </svg>
+            {boilers.length === 0 && (
+              <text x="90" y="130" className="schematic-empty">Добавьте котёл, чтобы увидеть логические соединения.</text>
+            )}
+          </svg>
+        </div>
+      </div>
     </div>
   );
 }

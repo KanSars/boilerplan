@@ -13,13 +13,21 @@ import { RoomSettingsPanel } from "@/features/boiler-room-editor/RoomSettingsPan
 import { ValidationPanel } from "@/features/boiler-room-editor/ValidationPanel";
 import { MockAiValidationExplainer } from "@/infrastructure/ai/MockAiValidationExplainer";
 import { CsvEquipmentScheduleExporter } from "@/infrastructure/exporters/CsvEquipmentScheduleExporter";
+import { DxfProjectExporter } from "@/infrastructure/exporters/DxfProjectExporter";
 import { JsonProjectExporter } from "@/infrastructure/exporters/JsonProjectExporter";
 import { SvgProjectExporter } from "@/infrastructure/exporters/SvgProjectExporter";
 import { SimpleOrthogonalPipeRouter } from "@/infrastructure/piping/SimpleOrthogonalPipeRouter";
 import { downloadTextFile } from "@/lib/download";
 import { createId } from "@/lib/ids";
 import { resetEquipmentCatalogToMockDefaults, updateEquipmentDefinition } from "@/store/catalogSlice";
-import { clearSelection, selectEquipmentDefinition, selectEquipmentInstance, setViewLayout } from "@/store/editorSlice";
+import {
+  clearSelection,
+  selectEquipmentDefinition,
+  selectEquipmentInstance,
+  setLayoutZoom,
+  setSchematicZoom,
+  setViewLayout,
+} from "@/store/editorSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addEquipmentInstance,
@@ -33,6 +41,8 @@ import {
   selectProject,
   selectEditedEquipmentDefinition,
   selectEquipmentDefinitions,
+  selectLayoutZoom,
+  selectSchematicZoom,
   selectSelectedEquipmentDefinition,
   selectSelectedEquipmentInstance,
   selectSelectedEquipmentInstanceId,
@@ -45,6 +55,7 @@ const pipeRouter = new SimpleOrthogonalPipeRouter();
 const jsonExporter = new JsonProjectExporter();
 const svgExporter = new SvgProjectExporter();
 const csvExporter = new CsvEquipmentScheduleExporter();
+const dxfExporter = new DxfProjectExporter();
 const aiExplainer = new MockAiValidationExplainer();
 
 export function BoilerRoomEditor() {
@@ -58,6 +69,8 @@ export function BoilerRoomEditor() {
   const validationIssues = useAppSelector(selectValidationIssues);
   const systemConnections = useAppSelector(selectSystemConnections);
   const viewLayout = useAppSelector(selectViewLayout);
+  const layoutZoom = useAppSelector(selectLayoutZoom);
+  const schematicZoom = useAppSelector(selectSchematicZoom);
   const projectWithValidation = useMemo(() => ({ ...project, validationIssues }), [project, validationIssues]);
   const exportContext = useMemo(() => ({ equipmentDefinitions }), [equipmentDefinitions]);
   const aiExplanation = useMemo(() => aiExplainer.explain(validationIssues), [validationIssues]);
@@ -141,6 +154,7 @@ export function BoilerRoomEditor() {
           onExportJson={() => downloadTextFile("boiler-room-project.json", jsonExporter.export(projectWithValidation, exportContext), "application/json")}
           onExportSvg={() => downloadTextFile("boiler-room-layout.svg", svgExporter.export(projectWithValidation, exportContext), "image/svg+xml")}
           onExportCsv={() => downloadTextFile("equipment-schedule.csv", csvExporter.export(projectWithValidation, exportContext), "text/csv")}
+          onExportDxf={() => downloadTextFile("boiler-room-layout.dxf", dxfExporter.export(projectWithValidation, exportContext), "application/dxf")}
         />
         <div className="view-layout-toolbar" aria-label="Расположение инженерных видов">
           <span>Расположение экранов</span>
@@ -161,22 +175,34 @@ export function BoilerRoomEditor() {
         </div>
         <div className={`engineering-views ${viewLayout === "column" ? "column" : "row"}`}>
           <section className="engineering-view">
-            <h2>План помещения</h2>
+            <ViewHeader
+              title="План помещения"
+              zoom={layoutZoom}
+              onZoomOut={() => dispatch(setLayoutZoom(layoutZoom - 0.1))}
+              onZoomIn={() => dispatch(setLayoutZoom(layoutZoom + 0.1))}
+            />
             <LayoutSvgEditor
               project={projectWithValidation}
               definitions={equipmentDefinitions}
               selectedId={selectedId}
               validationIssues={validationIssues}
+              zoom={layoutZoom}
               onSelect={(id) => dispatch(selectEquipmentInstance(id))}
               onMove={(id, position) => dispatch(updateEquipmentInstance({ id, patch: { position } }))}
             />
           </section>
           <section className="engineering-view">
-            <h2>Принципиальная схема</h2>
+            <ViewHeader
+              title="Принципиальная схема"
+              zoom={schematicZoom}
+              onZoomOut={() => dispatch(setSchematicZoom(schematicZoom - 0.1))}
+              onZoomIn={() => dispatch(setSchematicZoom(schematicZoom + 0.1))}
+            />
             <PrincipleSchematicView
               equipmentInstances={project.equipmentInstances}
               definitions={equipmentDefinitions}
               systemConnections={systemConnections}
+              zoom={schematicZoom}
             />
           </section>
         </div>
@@ -198,5 +224,28 @@ export function BoilerRoomEditor() {
         <ValidationPanel issues={validationIssues} aiExplanation={aiExplanation} />
       </aside>
     </main>
+  );
+}
+
+function ViewHeader({
+  title,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+}: {
+  title: string;
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+}) {
+  return (
+    <div className="engineering-view-header">
+      <h2>{title}</h2>
+      <div className="zoom-toolbar" aria-label={`Масштаб: ${title}`}>
+        <button type="button" onClick={onZoomOut} aria-label="Уменьшить масштаб">-</button>
+        <span>{Math.round(zoom * 100)}%</span>
+        <button type="button" onClick={onZoomIn} aria-label="Увеличить масштаб">+</button>
+      </div>
+    </div>
   );
 }

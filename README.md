@@ -100,6 +100,24 @@ npm test
 
 Если подходящая цель не найдена, UI показывает проблему явно. Если найдено несколько вариантов, система выбирает ближайший детерминированно и добавляет предупреждение. Ручной editor override пока не реализован и остаётся TODO на следующий этап.
 
+## DXF Экспорт
+
+Кнопка `Экспорт DXF` создаёт предварительный CAD-чертёж в ASCII DXF AutoCAD 2000 (`AC1015`). Экспорт строится не из SVG, а из доменной модели через промежуточную `CadDrawing`-модель. Единицы — миллиметры.
+
+Координаты экспортируются в CAD-ориентации: внутри приложения `Y` направлен вниз, а в DXF exporter применяется преобразование `Ycad = room.lengthMm - Yapp`, чтобы в CAD `Y` был направлен вверх.
+
+Слои v1:
+
+- `AR_ROOM_WALL` — контур помещения.
+- `ME_EQ_BODY` — корпуса оборудования.
+- `ME_EQ_CLEARANCE` — зоны обслуживания.
+- `ME_CONN_POINT` — точки подключения.
+- `ME_PIPE_SUPPLY` — предварительные трассы подачи.
+- `ME_PIPE_RETURN` — предварительные трассы обратки.
+- `AN_TEXT` — подписи.
+
+DXF v1 содержит `LWPOLYLINE`, `CIRCLE` и `TEXT`. Размерные линии, штамп, таблицы, блоки, hatch и DWG-конвертация оставлены на следующие этапы. Первичная проверка предполагается в nanoCAD Free или другом CAD, который читает AutoCAD 2000 DXF.
+
 ## Текущая Структура
 
 Архитектура остаётся доменно-ориентированной и немного приближена к Feature-Sliced Design без большого рискованного рефакторинга:
@@ -114,6 +132,14 @@ npm test
 - `src/lib`: общие утилиты. TODO: при следующем безопасном рефакторинге перенести в `src/shared/lib`.
 
 Полный FSD-переезд пока намеренно не сделан: текущая задача была про исправление runnable vertical slice, а не про крупную смену структуры. Следующий безопасный шаг — разделить `features/boiler-room-editor` на отдельные slices вроде `room-settings`, `equipment-catalog`, `equipment-deletion`, `pipe-routing`, `project-export` и `validation-report`.
+
+## Документация Для AI-Агентов
+
+Для будущих AI coding agents добавлены короткие правила и карта архитектуры:
+
+- [`AGENTS.md`](./AGENTS.md) — правила проекта, слоёв, состояния, доменной модели, экспорта и дисциплины изменений.
+- [`docs/architecture/module-map.md`](./docs/architecture/module-map.md) — где находятся room layout, schematic view, catalog/editor, connection resolving, routing, validation и exports.
+- [`docs/architecture/domain-concepts.md`](./docs/architecture/domain-concepts.md) — смысл `EquipmentDefinition`, `EquipmentInstance`, `ConnectionPoint`, `WorldConnectionPoint`, `SystemConnection`, `PipingRoute` и `CadDrawing`.
 
 ## Replacement Points
 
@@ -142,4 +168,5 @@ npm test
 - Несколько коллекторов одного типа обрабатываются упрощённо: выбирается первый подходящий.
 - Нет полноценного manual override editor для точек подключения.
 - Нет BIM/Revit/IFC import и нет извлечения connector data из PDF в runtime.
+- DXF export v1 пока без размеров, штампа, таблиц, блоков и hatch.
 - Поворот поддержан для прямоугольников и точек подключения на 0, 90, 180 и 270 градусов, но семантика зон обслуживания остаётся упрощённой v0-моделью.

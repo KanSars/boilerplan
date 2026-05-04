@@ -14,6 +14,7 @@ type Props = {
   definitions: EquipmentDefinition[];
   selectedId?: string;
   validationIssues: ValidationIssue[];
+  zoom: number;
   onSelect: (id: string) => void;
   onMove: (id: string, position: { xMm: number; yMm: number }) => void;
 };
@@ -23,7 +24,7 @@ type DragState = {
   offsetMm: { xMm: number; yMm: number };
 };
 
-export function LayoutSvgEditor({ project, definitions, selectedId, validationIssues, onSelect, onMove }: Props) {
+export function LayoutSvgEditor({ project, definitions, selectedId, validationIssues, zoom, onSelect, onMove }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const margin = 1600;
@@ -65,16 +66,18 @@ export function LayoutSvgEditor({ project, definitions, selectedId, validationIs
 
   return (
     <div className="editor-frame">
-      <svg
-        ref={svgRef}
-        className="layout-svg"
-        viewBox={viewBox}
-        onPointerMove={handlePointerMove}
-        onPointerUp={() => setDrag(null)}
-        onPointerCancel={() => setDrag(null)}
-        role="img"
-        aria-label="План котельной"
-      >
+      <div className="zoom-viewport">
+        <div className="zoom-content" style={{ width: `${zoom * 100}%`, height: `${zoom * 100}%` }}>
+          <svg
+            ref={svgRef}
+            className="layout-svg"
+            viewBox={viewBox}
+            onPointerMove={handlePointerMove}
+            onPointerUp={() => setDrag(null)}
+            onPointerCancel={() => setDrag(null)}
+            role="img"
+            aria-label="План котельной"
+          >
         <defs>
           <pattern id="grid" width="500" height="500" patternUnits="userSpaceOnUse">
             <path d="M 500 0 L 0 0 0 500" fill="none" stroke="#e5e7eb" strokeWidth="12" />
@@ -130,7 +133,9 @@ export function LayoutSvgEditor({ project, definitions, selectedId, validationIs
             </g>
           );
         })}
-      </svg>
+          </svg>
+        </div>
+      </div>
     </div>
   );
 }

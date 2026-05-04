@@ -116,7 +116,39 @@ button {
 
 .engineering-view h2 {
   font-size: 13px;
+  margin: 0;
+}
+
+.engineering-view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 5px;
+}
+
+.zoom-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.zoom-toolbar button {
+  width: 24px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.zoom-toolbar span {
+  min-width: 36px;
+  text-align: center;
 }
 
 .panel-section {
@@ -383,6 +415,13 @@ select {
 .editor-frame {
   min-height: 0;
   flex: 1;
+}
+
+.zoom-viewport {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
 }
 
 .layout-svg {

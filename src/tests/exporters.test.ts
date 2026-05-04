@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { CsvEquipmentScheduleExporter } from "@/infrastructure/exporters/CsvEquipmentScheduleExporter";
+import { DxfProjectExporter } from "@/infrastructure/exporters/DxfProjectExporter";
 import { JsonProjectExporter } from "@/infrastructure/exporters/JsonProjectExporter";
 import { SvgProjectExporter } from "@/infrastructure/exporters/SvgProjectExporter";
+import { SimpleOrthogonalPipeRouter } from "@/infrastructure/piping/SimpleOrthogonalPipeRouter";
 import { definitions, makeProject } from "@/tests/testFixtures";
 
 const context = { equipmentDefinitions: definitions };
@@ -23,5 +25,37 @@ describe("exporters", () => {
     const output = new SvgProjectExporter().export(makeProject(), context);
     expect(output.startsWith("<svg")).toBe(true);
     expect(output).toContain("B-1");
+  });
+
+  it("returns an AutoCAD 2000 ASCII DXF with CAD layers and entities", () => {
+    const project = makeProject();
+    project.equipmentInstances.push(
+      { id: "supply-header", definitionId: "supply-header", position: { xMm: 500, yMm: 3000 }, rotationDeg: 0, label: "Коллектор подачи" },
+      { id: "return-header", definitionId: "return-header", position: { xMm: 500, yMm: 3500 }, rotationDeg: 0, label: "Коллектор обратки" },
+    );
+    project.pipingRoutes = new SimpleOrthogonalPipeRouter().generateRoutes(project, context);
+
+    const output = new DxfProjectExporter().export(project, context);
+    expect(output).toContain("$ACADVER");
+    expect(output).toContain("AC1015");
+    expect(output).toContain("AR_ROOM_WALL");
+    expect(output).toContain("ME_EQ_BODY");
+    expect(output).toContain("ME_EQ_CLEARANCE");
+    expect(output).toContain("ME_CONN_POINT");
+    expect(output).toContain("ME_PIPE_SUPPLY");
+    expect(output).toContain("ME_PIPE_RETURN");
+    expect(output).toContain("LWPOLYLINE");
+    expect(output).toContain("CIRCLE");
+    expect(output).toContain("TEXT");
+    expect(output).toContain("AcDbPolyline");
+    expect(output).toContain("AcDbCircle");
+    expect(output).toContain("AcDbText");
+    expect(output).toContain("\\U+043F\\U+0440\\U+0435");
+    expect(output).toContain("\r\n");
+  });
+
+  it("inverts Y coordinates into CAD orientation in DXF export", () => {
+    const output = new DxfProjectExporter().export(makeProject(), context);
+    expect(output).toContain("5000");
   });
 });
