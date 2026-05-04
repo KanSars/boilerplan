@@ -4,8 +4,8 @@ import type { PointerEvent } from "react";
 import { useMemo, useRef, useState } from "react";
 import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
 import type { EquipmentInstance } from "@/domain/equipment/EquipmentInstance";
+import { getWorldConnectionPointsForInstance } from "@/domain/geometry/transforms";
 import { getEquipmentBodyRect, getEquipmentClearanceRect } from "@/domain/geometry/rectangles";
-import { transformConnectionPoint } from "@/domain/geometry/transforms";
 import type { Project } from "@/domain/project/Project";
 import type { ValidationIssue } from "@/domain/validation/ValidationIssue";
 
@@ -114,9 +114,18 @@ export function LayoutSvgEditor({ project, definitions, selectedId, validationIs
               <rect x={clearance.xMm} y={clearance.yMm} width={clearance.widthMm} height={clearance.depthMm} className={invalid ? "clearance invalid" : "clearance"} />
               <rect x={body.xMm} y={body.yMm} width={body.widthMm} height={body.depthMm} className={equipmentClassName} />
               <text x={body.xMm + 90} y={body.yMm + 180} className="equipment-label">{instance.label}</text>
-              {definition.connectionPoints.map((point) => {
-                const world = transformConnectionPoint(instance, definition, point);
-                return <circle key={point.id} cx={world.xMm} cy={world.yMm} r={65} className={`connection ${point.type}`} />;
+              {getWorldConnectionPointsForInstance(instance, definition).map((point) => {
+                return (
+                  <circle
+                    key={point.connectionPointId}
+                    cx={point.worldPosition.xMm}
+                    cy={point.worldPosition.yMm}
+                    r={65}
+                    className={`connection ${point.type}`}
+                  >
+                    <title>{`${point.label} · ${point.type}`}</title>
+                  </circle>
+                );
               })}
             </g>
           );

@@ -58,11 +58,26 @@ describe("SystemConnectionResolver", () => {
     expect(after.some((connection) => connection.systemType === "supply" && connection.status === "missing_target")).toBe(true);
   });
 
+  it("marks connection as ambiguous when several compatible headers exist and picks deterministic target", () => {
+    const project = withHeaders();
+    project.equipmentInstances.push({
+      id: "supply-header-2",
+      definitionId: "supply-header",
+      position: { xMm: 4000, yMm: 3000 },
+      rotationDeg: 0,
+      label: "Коллектор подачи 2",
+    });
+    const connection = resolver.resolve(project, context).find((item) => item.systemType === "supply");
+    expect(connection?.status).toBe("ambiguous");
+    expect(connection?.issueMessage).toBe("Найдено несколько подходящих точек подключения, выбран ближайший вариант");
+    expect(connection?.to?.equipmentInstanceId).toBe("supply-header");
+  });
+
   it("validation reports missing supply and return logical connections", () => {
     const project = withHeaders();
     project.equipmentInstances = project.equipmentInstances.filter((instance) => !instance.definitionId.endsWith("header"));
     const issues = new ValidationEngine(DemoInternalStandardsProfile).validate(project, context);
-    expect(issues.some((issue) => issue.ruleId === "required_hydronic_connections" && issue.message === "Котёл не подключён к коллектору подачи")).toBe(true);
-    expect(issues.some((issue) => issue.ruleId === "required_hydronic_connections" && issue.message === "Котёл не подключён к коллектору обратки")).toBe(true);
+    expect(issues.some((issue) => issue.ruleId === "missing_required_connection_target" && issue.message === "Для котла не найдена подходящая точка подключения подачи")).toBe(true);
+    expect(issues.some((issue) => issue.ruleId === "missing_required_connection_target" && issue.message === "Для котла не найдена подходящая точка подключения обратки")).toBe(true);
   });
 });

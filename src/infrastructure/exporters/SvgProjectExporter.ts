@@ -1,5 +1,5 @@
 import { getEquipmentBodyRect, getEquipmentClearanceRect } from "@/domain/geometry/rectangles";
-import { transformConnectionPoint } from "@/domain/geometry/transforms";
+import { getWorldConnectionPointsForInstance } from "@/domain/geometry/transforms";
 import type { Exporter } from "@/domain/export/Exporter";
 import type { ExportContext } from "@/domain/export/Exporter";
 import type { Project } from "@/domain/project/Project";
@@ -16,9 +16,8 @@ export class SvgProjectExporter implements Exporter<string> {
       if (!definition) return "";
       const body = getEquipmentBodyRect(instance, definition);
       const clearance = getEquipmentClearanceRect(instance, definition);
-      const points = definition.connectionPoints.map((point) => {
-        const world = transformConnectionPoint(instance, definition, point);
-        return `<circle cx="${world.xMm}" cy="${world.yMm}" r="45" fill="#ffffff" stroke="#111827" stroke-width="18"><title>${point.type}</title></circle>`;
+      const points = getWorldConnectionPointsForInstance(instance, definition).map((point) => {
+        return `<circle cx="${point.worldPosition.xMm}" cy="${point.worldPosition.yMm}" r="45" fill="${getConnectionFill(point.type)}" stroke="${getConnectionStroke(point.type)}" stroke-width="18"><title>${escapeXml(point.label)} (${point.type})</title></circle>`;
       }).join("");
       return `<g data-equipment-id="${instance.id}">
   <rect x="${clearance.xMm}" y="${clearance.yMm}" width="${clearance.widthMm}" height="${clearance.depthMm}" fill="#fef3c7" stroke="#f59e0b" stroke-width="14" stroke-dasharray="70 45"/>
@@ -45,3 +44,29 @@ export class SvgProjectExporter implements Exporter<string> {
 
 const escapeXml = (value: string): string =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;");
+
+const getConnectionStroke = (type: string): string => {
+  const colors: Record<string, string> = {
+    supply: "#dc2626",
+    return: "#2563eb",
+    gas: "#f59e0b",
+    flue: "#6b7280",
+    electrical: "#7c3aed",
+    signal: "#0f766e",
+    drain: "#0891b2",
+  };
+  return colors[type] ?? "#111827";
+};
+
+const getConnectionFill = (type: string): string => {
+  const colors: Record<string, string> = {
+    supply: "#fee2e2",
+    return: "#dbeafe",
+    gas: "#fef3c7",
+    flue: "#e5e7eb",
+    electrical: "#ede9fe",
+    signal: "#ccfbf1",
+    drain: "#cffafe",
+  };
+  return colors[type] ?? "#ffffff";
+};

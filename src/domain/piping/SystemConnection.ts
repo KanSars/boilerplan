@@ -18,4 +18,5 @@ export type SystemConnection = {
   };
   status: SystemConnectionStatus;
   issueMessage?: string;
+  warnings?: string[];
 };

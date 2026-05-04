@@ -11,7 +11,7 @@ type Props = {
 export function ExportPanel({ onGenerateRoutes, onValidate, onExportJson, onExportSvg, onExportCsv }: Props) {
   return (
     <div className="action-bar">
-      <button onClick={onGenerateRoutes}>Построить предварительные трассы труб</button>
+      <button onClick={onGenerateRoutes}>Соединить автоматически</button>
       <button onClick={onValidate}>Проверить</button>
       <button onClick={onExportJson}>Экспорт JSON</button>
       <button onClick={onExportSvg}>Экспорт SVG</button>

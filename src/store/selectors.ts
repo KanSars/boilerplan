@@ -1,4 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
+import { getAllWorldConnectionPoints } from "@/domain/geometry/transforms";
 import { SystemConnectionResolver } from "@/domain/piping/SystemConnectionResolver";
 import { ValidationEngine } from "@/domain/validation/ValidationEngine";
 import { DemoInternalStandardsProfile } from "@/infrastructure/standards/DemoInternalStandardsProfile";
@@ -21,6 +22,10 @@ export const selectValidationIssues = createSelector([selectProject], (project) 
 
 export const selectSystemConnections = createSelector([selectProject], (project) =>
   systemConnectionResolver.resolve(project, validationContext),
+);
+
+export const selectWorldConnectionPoints = createSelector([selectProject], (project) =>
+  getAllWorldConnectionPoints(project, equipmentDefinitions),
 );
 
 export const selectSelectedEquipmentInstance = createSelector(

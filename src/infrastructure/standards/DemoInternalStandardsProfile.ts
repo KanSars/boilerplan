@@ -1,4 +1,6 @@
 import type { StandardsProfile } from "@/domain/standards/StandardsProfile";
+import { AmbiguousConnectionRule } from "@/infrastructure/standards/rules/AmbiguousConnectionRule";
+import { ConnectionPointDataQualityRule } from "@/infrastructure/standards/rules/ConnectionPointDataQualityRule";
 import { EquipmentBodyCollisionRule } from "@/infrastructure/standards/rules/EquipmentBodyCollisionRule";
 import { EquipmentInsideRoomRule } from "@/infrastructure/standards/rules/EquipmentInsideRoomRule";
 import { PlaceholderEngineeringComplianceWarningRule } from "@/infrastructure/standards/rules/PlaceholderEngineeringComplianceWarningRule";
@@ -18,6 +20,8 @@ export const DemoInternalStandardsProfile: StandardsProfile = {
     ServiceClearanceCollisionRule,
     RequiredConnectionPointsRule,
     RequiredHydronicConnectionsRule,
+    AmbiguousConnectionRule,
+    ConnectionPointDataQualityRule,
     PlaceholderEngineeringComplianceWarningRule,
   ],
 };

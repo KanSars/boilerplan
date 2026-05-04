@@ -61,7 +61,7 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
                   {isSupply ? "Подача" : "Обратка"}
                 </text>
                 {connection.status === "ambiguous" && (
-                  <text className="schematic-warning" x={(from.x + to.x) / 2 + 35} y={(from.y + to.y) / 2 + 82}>выбран первый коллектор</text>
+                  <text className="schematic-warning" x={(from.x + to.x) / 2 + 35} y={(from.y + to.y) / 2 + 82}>Несколько вариантов подключения</text>
                 )}
               </g>
             );
@@ -72,7 +72,7 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
             <g key={connection.id} className="schematic-missing">
               <text x={boilerPosition.x + 170} y={boilerPosition.y + (isSupply ? 30 : 68)} className="schematic-cross">x</text>
               <text x={boilerPosition.x + 192} y={boilerPosition.y + (isSupply ? 30 : 68)} className="schematic-missing-text">
-                {connection.issueMessage ?? (isSupply ? "Нет коллектора подачи" : "Нет коллектора обратки")}
+                {connection.issueMessage ?? (isSupply ? "Нет подходящей цели" : "Нет подходящей цели")}
               </text>
             </g>
           );
@@ -90,8 +90,8 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
           );
         })}
 
-        {supplyHeader ? <HeaderNode instance={supplyHeader} position={nodePositions.get(supplyHeader.id)} type="supply" /> : <MissingHeader x={565} y={95} label="Нет коллектора подачи" />}
-        {returnHeader ? <HeaderNode instance={returnHeader} position={nodePositions.get(returnHeader.id)} type="return" /> : <MissingHeader x={565} y={Math.max(280, 120 + boilers.length * 95)} label="Нет коллектора обратки" />}
+        {supplyHeader ? <HeaderNode instance={supplyHeader} position={nodePositions.get(supplyHeader.id)} type="supply" /> : <MissingHeader x={565} y={95} label="Нет точки подключения" />}
+        {returnHeader ? <HeaderNode instance={returnHeader} position={nodePositions.get(returnHeader.id)} type="return" /> : <MissingHeader x={565} y={Math.max(280, 120 + boilers.length * 95)} label="Нет точки подключения" />}
 
         {boilers.length === 0 && (
           <text x="90" y="130" className="schematic-empty">Добавьте котёл, чтобы увидеть логические соединения.</text>

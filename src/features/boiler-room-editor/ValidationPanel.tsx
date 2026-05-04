@@ -40,7 +40,9 @@ const translateRuleId = (ruleId: string): string => {
     equipment_body_collision: "Пересечение корпусов оборудования",
     service_clearance_collision_demo: "Пересечение зон обслуживания",
     required_connection_points: "Обязательные точки подключения",
-    required_hydronic_connections: "Подключение к коллекторам",
+    missing_required_connection_target: "Отсутствуют точки подключения",
+    ambiguous_connection: "Несколько вариантов подключения",
+    connection_point_data_quality: "Качество данных точки подключения",
     placeholder_engineering_compliance_warning: "Ограничения проверки v0",
   };
   return labels[ruleId] ?? ruleId;

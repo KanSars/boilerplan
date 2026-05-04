@@ -1,32 +1,36 @@
-import type { ConnectionPoint } from "@/domain/equipment/ConnectionPoint";
 import type { EquipmentInstance } from "@/domain/equipment/EquipmentInstance";
+import type { WorldConnectionPoint } from "@/domain/equipment/WorldConnectionPoint";
+import { getAllWorldConnectionPoints } from "@/domain/geometry/transforms";
+import { ConnectionCompatibilityService } from "@/domain/piping/ConnectionCompatibilityService";
 import type { Project } from "@/domain/project/Project";
 import type { SystemConnection } from "@/domain/piping/SystemConnection";
 import type { ValidationContext } from "@/domain/validation/ValidationRule";
 
 export class SystemConnectionResolver {
+  private readonly compatibility = new ConnectionCompatibilityService();
+
   resolve(project: Project, context: ValidationContext): SystemConnection[] {
+    const allWorldConnectionPoints = getAllWorldConnectionPoints(project, context.equipmentDefinitions);
     const boilers = project.equipmentInstances.filter((instance) =>
       this.getDefinitionCategory(instance, context) === "boiler",
     );
-    const supplyHeaders = this.findHeaders(project, context, "supply");
-    const returnHeaders = this.findHeaders(project, context, "return");
 
     return boilers.flatMap((boiler) => [
-      this.resolveBoilerConnection(project, context, boiler, "supply", supplyHeaders),
-      this.resolveBoilerConnection(project, context, boiler, "return", returnHeaders),
+      this.resolveBoilerConnection(context, boiler, "supply", allWorldConnectionPoints),
+      this.resolveBoilerConnection(context, boiler, "return", allWorldConnectionPoints),
     ]);
   }
 
   private resolveBoilerConnection(
-    project: Project,
     context: ValidationContext,
     boiler: EquipmentInstance,
     systemType: "supply" | "return",
-    headers: EquipmentInstance[],
+    allWorldConnectionPoints: WorldConnectionPoint[],
   ): SystemConnection {
-    const boilerDefinition = context.equipmentDefinitions.find((definition) => definition.id === boiler.definitionId);
-    const sourcePoint = boilerDefinition?.connectionPoints.find((point) => point.type === systemType);
+    const sourcePoint = allWorldConnectionPoints.find((point) =>
+      point.equipmentInstanceId === boiler.id &&
+      point.type === systemType,
+    );
 
     if (!sourcePoint) {
       return {
@@ -40,69 +44,61 @@ export class SystemConnectionResolver {
       };
     }
 
-    const header = headers[0];
-    if (!header) {
+    const compatibleTargets = allWorldConnectionPoints
+      .filter((point) =>
+        point.equipmentInstanceId !== boiler.id &&
+        this.getDefinitionCategoryByDefinitionId(point.definitionId, context) === "header",
+      )
+      .map((point) => ({
+        point,
+        compatibility: this.compatibility.canConnect(sourcePoint, point),
+      }))
+      .filter((candidate) => candidate.compatibility.compatible)
+      .sort((a, b) => this.getDistance(sourcePoint, a.point) - this.getDistance(sourcePoint, b.point));
+
+    if (compatibleTargets.length === 0) {
       return {
         id: `system_${systemType}_${boiler.id}_missing_target`,
         systemType,
-        from: { equipmentInstanceId: boiler.id, connectionPointId: sourcePoint.id },
+        from: { equipmentInstanceId: boiler.id, connectionPointId: sourcePoint.connectionPointId },
         status: "missing_target",
         issueMessage: systemType === "supply"
-          ? "Нет коллектора подачи для подключения котла"
-          : "Нет коллектора обратки для подключения котла",
+          ? "Нет подходящей точки подключения для подачи"
+          : "Нет подходящей точки подключения для обратки",
       };
     }
 
-    const headerPoint = this.getHeaderPoint(header, context, systemType);
-    if (!headerPoint) {
-      return {
-        id: `system_${systemType}_${boiler.id}_${header.id}_invalid`,
-        systemType,
-        from: { equipmentInstanceId: boiler.id, connectionPointId: sourcePoint.id },
-        status: "invalid",
-        issueMessage: systemType === "supply"
-          ? "Коллектор подачи не имеет точки подключения подачи"
-          : "Коллектор обратки не имеет точки подключения обратки",
-      };
-    }
-
-    const issueMessage = headers.length > 1
-      ? "Найдено несколько подходящих коллекторов, выбран первый"
+    const selectedTarget = compatibleTargets[0].point;
+    const issueMessage = compatibleTargets.length > 1
+      ? "Найдено несколько подходящих точек подключения, выбран ближайший вариант"
       : undefined;
 
     return {
-      id: `system_${systemType}_${boiler.id}_${header.id}`,
+      id: `system_${systemType}_${boiler.id}_${selectedTarget.equipmentInstanceId}_${selectedTarget.connectionPointId}`,
       systemType,
-      from: { equipmentInstanceId: boiler.id, connectionPointId: sourcePoint.id },
-      to: { equipmentInstanceId: header.id, connectionPointId: headerPoint.id },
+      from: { equipmentInstanceId: boiler.id, connectionPointId: sourcePoint.connectionPointId },
+      to: {
+        equipmentInstanceId: selectedTarget.equipmentInstanceId,
+        connectionPointId: selectedTarget.connectionPointId,
+      },
       status: issueMessage ? "ambiguous" : "connected",
       issueMessage,
+      warnings: issueMessage ? [issueMessage] : [],
     };
-  }
-
-  private findHeaders(
-    project: Project,
-    context: ValidationContext,
-    systemType: "supply" | "return",
-  ): EquipmentInstance[] {
-    return project.equipmentInstances.filter((instance) => {
-      const definition = context.equipmentDefinitions.find((item) => item.id === instance.definitionId);
-      return definition?.category === "header" &&
-        definition.connectionPoints.some((point) => point.type === systemType);
-    });
-  }
-
-  private getHeaderPoint(
-    instance: EquipmentInstance,
-    context: ValidationContext,
-    systemType: "supply" | "return",
-  ): ConnectionPoint | undefined {
-    return context.equipmentDefinitions
-      .find((definition) => definition.id === instance.definitionId)
-      ?.connectionPoints.find((point) => point.type === systemType);
   }
 
   private getDefinitionCategory(instance: EquipmentInstance, context: ValidationContext) {
     return context.equipmentDefinitions.find((definition) => definition.id === instance.definitionId)?.category;
+  }
+
+  private getDefinitionCategoryByDefinitionId(definitionId: string, context: ValidationContext) {
+    return context.equipmentDefinitions.find((definition) => definition.id === definitionId)?.category;
+  }
+
+  private getDistance(from: WorldConnectionPoint, to: WorldConnectionPoint): number {
+    return Math.hypot(
+      from.worldPosition.xMm - to.worldPosition.xMm,
+      from.worldPosition.yMm - to.worldPosition.yMm,
+    );
   }
 }

@@ -113,7 +113,7 @@ export function BoilerRoomEditor() {
         <ExportPanel
           onGenerateRoutes={() => dispatch(setPipingRoutes(pipeRouter.generateRoutes(project, exportContext)))}
           onValidate={() => undefined}
-          onExportJson={() => downloadTextFile("boiler-room-project.json", jsonExporter.export(projectWithValidation), "application/json")}
+          onExportJson={() => downloadTextFile("boiler-room-project.json", jsonExporter.export(projectWithValidation, exportContext), "application/json")}
           onExportSvg={() => downloadTextFile("boiler-room-layout.svg", svgExporter.export(projectWithValidation, exportContext), "image/svg+xml")}
           onExportCsv={() => downloadTextFile("equipment-schedule.csv", csvExporter.export(projectWithValidation, exportContext), "text/csv")}
         />

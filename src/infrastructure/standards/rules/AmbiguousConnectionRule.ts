@@ -3,21 +3,18 @@ import type { ValidationRule } from "@/domain/validation/ValidationRule";
 
 const resolver = new SystemConnectionResolver();
 
-export const RequiredHydronicConnectionsRule: ValidationRule = {
-  id: "missing_required_connection_target",
-  name: "Отсутствуют обязательные цели подключения",
+export const AmbiguousConnectionRule: ValidationRule = {
+  id: "ambiguous_connection",
+  name: "Найдено несколько возможных подключений",
   category: "logical-system-connections",
   severity: "warning",
   validate(project, context) {
-    const connections = resolver.resolve(project, context);
-    return connections
-      .filter((connection) => connection.status === "missing_target")
+    return resolver.resolve(project, context)
+      .filter((connection) => connection.status === "ambiguous")
       .map((connection) => ({
         id: `${this.id}_${connection.id}`,
         severity: "warning",
-        message: connection.systemType === "supply"
-          ? "Для котла не найдена подходящая точка подключения подачи"
-          : "Для котла не найдена подходящая точка подключения обратки",
+        message: "Найдено несколько возможных подключений, выбран предварительный вариант",
         entityIds: [
           connection.from.equipmentInstanceId,
           ...(connection.to ? [connection.to.equipmentInstanceId] : []),
