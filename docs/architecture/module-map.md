@@ -77,6 +77,18 @@ Validation запускает набор правил из активного st
 - `src/store/selectors.ts` — `selectValidationIssues`.
 - `src/tests/validation.test.ts` — тесты validation behavior.
 
+## Evidence And Requirements
+
+Evidence model готовит основу для будущих нормативных требований, паспортов производителей и AI extraction agents. Это пока не проверка ГОСТов и не источник инженерной истины.
+
+- `src/domain/evidence/*` — чистые типы evidence layer: `SourceDocument`, `DocumentCitation`, `Requirement`, `ApplicabilityCondition`, `CompiledRule`, `RuleEvaluation`, `EvidenceLink`.
+- `src/domain/evidence/EvidenceRepository.ts` — интерфейсы будущих repository/compiler/evaluator сервисов без AI и без внешней БД.
+- `src/domain/evidence/evidenceGuards.ts` — маленькие проверки связей внутри evidence model.
+- `src/shared/config/demoEvidenceRequirements.ts` — фиктивные demo requirements для проверки формы данных. Не использовать как инженерные правила.
+- `src/tests/evidence.test.ts` — focused tests для цепочки requirement -> citation -> evaluation -> evidence link.
+
+Будущие AI-агенты должны возвращать структурированные требования с citations и статусом доверия, а не свободный текст без проверяемого источника.
+
 ## Exports
 
 Exports должны исходить из доменной модели, а не из UI DOM.
