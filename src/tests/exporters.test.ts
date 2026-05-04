@@ -10,7 +10,7 @@ describe("exporters", () => {
   it("returns valid project JSON", () => {
     const output = new JsonProjectExporter().export(makeProject(), context);
     expect(JSON.parse(output).id).toBe("test-project");
-    expect(JSON.parse(output).equipmentDefinitionsPreview[0].connectionPoints.length).toBeGreaterThan(0);
+    expect(JSON.parse(output).catalogSnapshot[0].connectionPoints.length).toBeGreaterThan(0);
   });
 
   it("includes equipment rows in CSV", () => {

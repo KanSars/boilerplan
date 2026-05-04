@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
 import type { EquipmentInstance } from "@/domain/equipment/EquipmentInstance";
+import { EquipmentDefinitionEditorPanel } from "@/features/boiler-room-editor/EquipmentDefinitionEditorPanel";
 import { ExportPanel } from "@/features/boiler-room-editor/ExportPanel";
 import { EquipmentCatalogPanel } from "@/features/boiler-room-editor/EquipmentCatalogPanel";
 import { LayoutSvgEditor } from "@/features/boiler-room-editor/LayoutSvgEditor";
@@ -17,8 +18,8 @@ import { SvgProjectExporter } from "@/infrastructure/exporters/SvgProjectExporte
 import { SimpleOrthogonalPipeRouter } from "@/infrastructure/piping/SimpleOrthogonalPipeRouter";
 import { downloadTextFile } from "@/lib/download";
 import { createId } from "@/lib/ids";
-import { equipmentDefinitions } from "@/shared/config/equipmentDefinitions";
-import { clearSelection, selectEquipmentInstance, setViewLayout } from "@/store/editorSlice";
+import { resetEquipmentCatalogToMockDefaults, updateEquipmentDefinition } from "@/store/catalogSlice";
+import { clearSelection, selectEquipmentDefinition, selectEquipmentInstance, setViewLayout } from "@/store/editorSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addEquipmentInstance,
@@ -30,6 +31,8 @@ import {
 } from "@/store/projectSlice";
 import {
   selectProject,
+  selectEditedEquipmentDefinition,
+  selectEquipmentDefinitions,
   selectSelectedEquipmentDefinition,
   selectSelectedEquipmentInstance,
   selectSelectedEquipmentInstanceId,
@@ -43,11 +46,12 @@ const jsonExporter = new JsonProjectExporter();
 const svgExporter = new SvgProjectExporter();
 const csvExporter = new CsvEquipmentScheduleExporter();
 const aiExplainer = new MockAiValidationExplainer();
-const exportContext = { equipmentDefinitions };
 
 export function BoilerRoomEditor() {
   const dispatch = useAppDispatch();
   const project = useAppSelector(selectProject);
+  const equipmentDefinitions = useAppSelector(selectEquipmentDefinitions);
+  const editedDefinition = useAppSelector(selectEditedEquipmentDefinition);
   const selectedId = useAppSelector(selectSelectedEquipmentInstanceId);
   const selectedInstance = useAppSelector(selectSelectedEquipmentInstance);
   const selectedDefinition = useAppSelector(selectSelectedEquipmentDefinition);
@@ -55,6 +59,7 @@ export function BoilerRoomEditor() {
   const systemConnections = useAppSelector(selectSystemConnections);
   const viewLayout = useAppSelector(selectViewLayout);
   const projectWithValidation = useMemo(() => ({ ...project, validationIssues }), [project, validationIssues]);
+  const exportContext = useMemo(() => ({ equipmentDefinitions }), [equipmentDefinitions]);
   const aiExplanation = useMemo(() => aiExplainer.explain(validationIssues), [validationIssues]);
 
   const deleteSelectedEquipment = useCallback(() => {
@@ -97,6 +102,16 @@ export function BoilerRoomEditor() {
     dispatch(selectEquipmentInstance(instance.id));
   };
 
+  const saveEquipmentDefinition = (definition: EquipmentDefinition) => {
+    dispatch(updateEquipmentDefinition(definition));
+    dispatch(setPipingRoutes([]));
+  };
+
+  const resetCatalog = () => {
+    dispatch(resetEquipmentCatalogToMockDefaults());
+    dispatch(setPipingRoutes([]));
+  };
+
   return (
     <main className="app-shell">
       <aside className="sidebar left-sidebar">
@@ -106,7 +121,17 @@ export function BoilerRoomEditor() {
           onProjectNameChange={(name) => dispatch(setProjectName(name))}
           onRoomChange={(room) => dispatch(setRoom(room))}
         />
-        <EquipmentCatalogPanel definitions={equipmentDefinitions} onAddEquipment={addEquipment} />
+        <EquipmentCatalogPanel
+          definitions={equipmentDefinitions}
+          onAddEquipment={addEquipment}
+          onSelectDefinition={(definitionId) => dispatch(selectEquipmentDefinition(definitionId))}
+        />
+        <EquipmentDefinitionEditorPanel
+          key={editedDefinition?.id ?? "no-definition"}
+          definition={editedDefinition}
+          onResetCatalog={resetCatalog}
+          onSave={saveEquipmentDefinition}
+        />
       </aside>
 
       <section className="workspace">

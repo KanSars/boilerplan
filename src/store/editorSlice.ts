@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 type EditorState = {
   selectedEquipmentInstanceId: string;
+  selectedEquipmentDefinitionId: string;
   activeView: "split" | "layout" | "schematic";
   viewLayout: "row" | "column";
   showClearanceZones: boolean;
@@ -10,6 +11,7 @@ type EditorState = {
 
 const initialState: EditorState = {
   selectedEquipmentInstanceId: "inst_boiler_1",
+  selectedEquipmentDefinitionId: "boiler-250kw",
   activeView: "split",
   viewLayout: "row",
   showClearanceZones: true,
@@ -25,6 +27,9 @@ export const editorSlice = createSlice({
     },
     clearSelection(state) {
       state.selectedEquipmentInstanceId = "";
+    },
+    selectEquipmentDefinition(state, action: PayloadAction<string>) {
+      state.selectedEquipmentDefinitionId = action.payload;
     },
     setActiveView(state, action: PayloadAction<EditorState["activeView"]>) {
       state.activeView = action.payload;
@@ -43,6 +48,7 @@ export const editorSlice = createSlice({
 
 export const {
   clearSelection,
+  selectEquipmentDefinition,
   selectEquipmentInstance,
   setActiveView,
   setViewLayout,
