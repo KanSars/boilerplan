@@ -5,6 +5,7 @@ import { getEquipmentBodyRect } from "@/domain/geometry/rectangles";
 import { getWorldConnectionPointsForInstance } from "@/domain/geometry/transforms";
 import type { PipingSystemType } from "@/domain/piping/PipingRoute";
 import type { Project } from "@/domain/project/Project";
+import { pilotPipeSpecs, type PilotPipeSpec } from "@/shared/config/pilotKitSpecs";
 
 const sheetWidth = 420;
 const sheetHeight = 297;
@@ -65,6 +66,9 @@ export class BoilerRoomSheetDrawingService {
           "src-sp-89-13330-2016",
           "src-gost-21-704-2011",
           "src-gost-2-785-70",
+          "src-stout-steel-manifold-dn32",
+          "src-gost-3262-75",
+          "src-dn-ball-valve-bv3232p",
         ],
         notes: [
           "Предварительный лист: требуется инженерная проверка источников, применимости и координат патрубков.",
@@ -128,6 +132,7 @@ export class BoilerRoomSheetDrawingService {
         y: origin.y + point.yMm * scale,
       })), pipeLayer(route.systemType)));
     }
+
   }
 
   private addProcessDiagram(
@@ -154,16 +159,16 @@ export class BoilerRoomSheetDrawingService {
 
     const supply = { x: x0 + 105, y: y0 + 28, width: 88, height: 12 };
     const ret = { x: x0 + 105, y: y0 + 84, width: 88, height: 12 };
-    this.addHeaderSymbol(localEntities, supply.x, supply.y, supply.width, supply.height, "КП1 Коллектор подачи", "PIPE_SUPPLY");
-    this.addHeaderSymbol(localEntities, ret.x, ret.y, ret.width, ret.height, "КО1 Коллектор обратки", "PIPE_RETURN");
+    const supplyHeaderDefinition = getDefinitionByInstanceId(project, equipmentDefinitions, supplyHeaderId);
+    const returnHeaderDefinition = getDefinitionByInstanceId(project, equipmentDefinitions, returnHeaderId);
+    this.addHeaderSymbol(localEntities, supply.x, supply.y, supply.width, supply.height, getHeaderLabel("КП1", supplyHeaderDefinition), "PIPE_SUPPLY");
+    this.addHeaderSymbol(localEntities, ret.x, ret.y, ret.width, ret.height, getHeaderLabel("КО1", returnHeaderDefinition), "PIPE_RETURN");
 
     const boilerFacts = getEquipmentFacts(boilerDefinition);
     const supplyPoint = getConnectionPoint(boilerDefinition, "supply");
     const returnPoint = getConnectionPoint(boilerDefinition, "return");
     const gasPoint = getConnectionPoint(boilerDefinition, "gas");
     const fluePoint = getConnectionPoint(boilerDefinition, "flue");
-    const supplyHeaderDefinition = getDefinitionByInstanceId(project, equipmentDefinitions, supplyHeaderId);
-    const returnHeaderDefinition = getDefinitionByInstanceId(project, equipmentDefinitions, returnHeaderId);
     const supplyHeaderPoint = getConnectionPoint(supplyHeaderDefinition, "supply");
     const returnHeaderPoint = getConnectionPoint(returnHeaderDefinition, "return");
     const supplyDn = supplyPoint?.nominalDiameterMm ?? 32;
@@ -176,6 +181,14 @@ export class BoilerRoomSheetDrawingService {
     const boilerFluePort = getBoxPort(boilerBox, boilerDefinition, fluePoint, "top");
     const supplyHeaderPort = getBoxPort(supply, supplyHeaderDefinition, supplyHeaderPoint, "left");
     const returnHeaderPort = getBoxPort(ret, returnHeaderDefinition, returnHeaderPoint, "left");
+    const valvePoints = spreadClosePoints(
+      [
+        { systemType: "supply" as const, point: { x: supply.x - 18, y: midpoint(boilerSupplyPort.y, supplyHeaderPort.y) } },
+        { systemType: "return" as const, point: { x: ret.x - 25, y: midpoint(boilerReturnPort.y, returnHeaderPort.y) } },
+        { systemType: "gas" as const, point: { x: boilerGasPort.x, y: boilerBox.y + boilerBox.height + 12 } },
+      ],
+      14,
+    );
 
     this.addPipeRun(localEntities, [
       boilerSupplyPort,
@@ -183,6 +196,7 @@ export class BoilerRoomSheetDrawingService {
       { x: supply.x - 18, y: supplyHeaderPort.y },
       supplyHeaderPort,
     ], "PIPE_SUPPLY", `T1 DN${supplyDn}`);
+    this.addValveEquipmentSymbol(localEntities, project, equipmentDefinitions, "supply", valvePoints.supply);
 
     this.addPipeRun(localEntities, [
       boilerReturnPort,
@@ -190,12 +204,14 @@ export class BoilerRoomSheetDrawingService {
       { x: ret.x - 25, y: returnHeaderPort.y },
       returnHeaderPort,
     ], "PIPE_RETURN", `T2 DN${returnDn}`);
+    this.addValveEquipmentSymbol(localEntities, project, equipmentDefinitions, "return", valvePoints.return);
 
     this.addPipeRun(localEntities, [
       boilerGasPort,
       { x: boilerGasPort.x, y: boilerBox.y + boilerBox.height + 24 },
       { x: boilerBox.x - 30, y: boilerBox.y + boilerBox.height + 24 },
     ], "PIPE_GAS", `Г DN${gasDn}`);
+    this.addValveEquipmentSymbol(localEntities, project, equipmentDefinitions, "gas", valvePoints.gas);
 
     this.addPipeRun(localEntities, [
       boilerFluePort,
@@ -216,6 +232,9 @@ export class BoilerRoomSheetDrawingService {
       text(ret.x + ret.width, ret.y + 17, "от системы", 2.4, "ANNOTATION", "normal", "end"),
       text(x0, 138, getPassportSummary(boilerDefinition), 2.6, "ANNOTATION"),
       text(x0, 144, getSourceSummary(boilerDefinition), 2.6, "WARNING"),
+      text(x0, 150, getCollectorSummary(supplyHeaderDefinition), 2.6, "ANNOTATION"),
+      text(x0, 156, getPipeKitSummary(), 2.6, "ANNOTATION"),
+      text(x0, 162, "Арматура: шаровые краны DN32/DN25, источник-кандидат src-dn-ball-valve-bv3232p.", 2.6, "ANNOTATION"),
       text(x0, 165, "Котел работает с принудительной циркуляцией. Запуск без циркуляции запрещен по паспорту RGT.", 2.6, "WARNING"),
       text(x0, 171, "DN и габариты для RGT-100/КСВА-100 взяты из публичного паспорта; координаты портов условные.", 2.6, "WARNING"),
     );
@@ -249,6 +268,9 @@ export class BoilerRoomSheetDrawingService {
     }
     if (category === "header") {
       entities.push(line([{ x: x + 1, y: y + height / 2 }, { x: x + width - 1, y: y + height / 2 }], "EQUIPMENT_SYMBOL"));
+    }
+    if (category === "valve") {
+      this.addValveSymbol(entities, x + width / 2, y + height / 2, "PIPE_SUPPLY");
     }
   }
 
@@ -294,6 +316,24 @@ export class BoilerRoomSheetDrawingService {
     );
   }
 
+  private addValveEquipmentSymbol(
+    entities: DrawingEntity[],
+    project: Project,
+    equipmentDefinitions: EquipmentDefinition[],
+    systemType: "supply" | "return" | "gas",
+    point: Point,
+  ) {
+    const component = project.equipmentInstances.find((instance) => {
+      const definition = equipmentDefinitions.find((item) => item.id === instance.definitionId);
+      return definition?.category === "valve" && definition.connectionPoints.some((connectionPoint) => connectionPoint.type === systemType);
+    });
+    const definition = component ? equipmentDefinitions.find((item) => item.id === component.definitionId) : undefined;
+    if (!component || !definition) return;
+    const dn = definition.connectionPoints.find((connectionPoint) => connectionPoint.type === systemType)?.nominalDiameterMm;
+    this.addValveSymbol(entities, point.x, point.y, pipeLayer(systemType));
+    entities.push(text(point.x + 5, point.y + 5, dn ? `DN${dn}` : component.label, 2, "ANNOTATION", "bold"));
+  }
+
   private addPipeRun(
     entities: DrawingEntity[],
     points: Point[],
@@ -304,9 +344,6 @@ export class BoilerRoomSheetDrawingService {
     const mid = points[Math.floor(points.length / 2)];
     entities.push(text(mid.x + 2, mid.y - 2, label, 2.5, "ANNOTATION", "bold"));
     this.addFlowArrow(entities, points, layer);
-    if (layer !== "PIPE_FLUE") {
-      this.addValve(entities, mid.x, mid.y, layer);
-    }
   }
 
   private addFlowArrow(entities: DrawingEntity[], points: Point[], layer: "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS" | "PIPE_FLUE") {
@@ -329,6 +366,10 @@ export class BoilerRoomSheetDrawingService {
   }
 
   private addValve(entities: DrawingEntity[], x: number, y: number, pipeLayer: "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS") {
+    this.addValveSymbol(entities, x, y, pipeLayer);
+  }
+
+  private addValveSymbol(entities: DrawingEntity[], x: number, y: number, pipeLayer: "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS") {
     const size = 4;
     entities.push(
       { type: "polyline", layer: "VALVE_SYMBOL", points: [{ x: x - size, y: y - size }, { x, y }, { x: x - size, y: y + size }, { x: x - size, y: y - size }], closed: true },
@@ -339,6 +380,35 @@ export class BoilerRoomSheetDrawingService {
 }
 
 type Point = { x: number; y: number };
+type ValveSystemType = "supply" | "return" | "gas";
+
+const midpoint = (a: number, b: number) => (a + b) / 2;
+
+const spreadClosePoints = (
+  items: { systemType: ValveSystemType; point: Point }[],
+  minDistance: number,
+): Record<ValveSystemType, Point> => {
+  const sorted = items
+    .map((item) => ({ ...item, point: { ...item.point } }))
+    .sort((a, b) => a.point.y - b.point.y);
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = sorted[index - 1].point;
+    const current = sorted[index].point;
+    const dx = current.x - previous.x;
+    const dy = current.y - previous.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > 0 && distance < minDistance) {
+      current.y += minDistance - distance;
+    }
+  }
+
+  return {
+    supply: sorted.find((item) => item.systemType === "supply")?.point ?? { x: 0, y: 0 },
+    return: sorted.find((item) => item.systemType === "return")?.point ?? { x: 0, y: 0 },
+    gas: sorted.find((item) => item.systemType === "gas")?.point ?? { x: 0, y: 0 },
+  };
+};
 
 const rect = (x: number, y: number, width: number, height: number, layer: DrawingEntity["layer"], fill?: string): DrawingEntity => ({
   type: "rect",
@@ -405,6 +475,9 @@ type EquipmentFacts = {
   fuelType?: string;
   gasPressureKpaMax?: number;
   flueDiameterMm?: number;
+  nominalDiameterMm?: number;
+  circuitCount?: number;
+  article?: string;
 };
 
 const getEquipmentFacts = (definition: EquipmentDefinition | undefined): EquipmentFacts => {
@@ -431,6 +504,38 @@ const getSourceSummary = (definition: EquipmentDefinition | undefined): string =
     : "review_required";
   return `Источник: ${sourceDocumentId}; статус: ${status}`;
 };
+
+const getHeaderLabel = (prefix: string, definition: EquipmentDefinition | undefined): string => {
+  if (!definition) return `${prefix} Коллектор`;
+  const model = definition.model ?? definition.name;
+  const facts = getEquipmentFacts(definition);
+  const dn = facts.nominalDiameterMm ? `DN${facts.nominalDiameterMm}` : "DN?";
+  const circuits = facts.circuitCount ? `${facts.circuitCount} конт.` : "";
+  return `${prefix} ${definition.manufacturer ?? ""} ${model} ${dn} ${circuits}`.trim();
+};
+
+const getCollectorSummary = (definition: EquipmentDefinition | undefined): string => {
+  const facts = getEquipmentFacts(definition);
+  const article = facts.article ? `арт. ${facts.article}` : definition?.model;
+  const dn = facts.nominalDiameterMm ? `DN${facts.nominalDiameterMm}` : "DN?";
+  const circuits = facts.circuitCount ? `${facts.circuitCount} контура` : "контуры требуют проверки";
+  return `Коллекторы: ${definition?.manufacturer ?? "источник не задан"} ${article ?? ""}, ${dn}, ${circuits}; статус review_required.`;
+};
+
+const getPipeKitSummary = (): string => {
+  const hydronic = pilotPipeSpecs.find((spec) => spec.system === "supply");
+  const gas = pilotPipeSpecs.find((spec) => spec.system === "gas");
+  const flue = pilotPipeSpecs.find((spec) => spec.system === "flue");
+  const hydronicText = hydronic ? `T1/T2 DN${hydronic.nominalDiameterMm} ${formatPipeSize(hydronic)}` : "T1/T2 DN?";
+  const gasText = gas ? `Г DN${gas.nominalDiameterMm} ${formatPipeSize(gas)}` : "Г DN?";
+  const flueText = flue ? `дымоход DN${flue.nominalDiameterMm}` : "дымоход DN?";
+  return `Трубы: ${hydronicText}; ${gasText}; ${flueText}; источники review_required.`;
+};
+
+const formatPipeSize = (spec: PilotPipeSpec): string =>
+  spec.outerDiameterMm && spec.wallThicknessMm
+    ? `Ø${spec.outerDiameterMm}x${spec.wallThicknessMm}`
+    : spec.material;
 
 type Box = { x: number; y: number; width: number; height: number };
 

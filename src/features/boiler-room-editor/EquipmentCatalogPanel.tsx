@@ -32,6 +32,7 @@ const translateCategory = (category: EquipmentDefinition["category"]): string =>
     boiler: "котёл",
     pump: "насос",
     header: "коллектор",
+    valve: "арматура",
     tank: "бак",
     sensor: "датчик",
     cabinet: "шкаф",

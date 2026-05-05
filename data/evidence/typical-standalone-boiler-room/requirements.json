@@ -133,11 +133,11 @@
     "confidence": 0.35,
     "citations": [
       {
-        "id": "cit-sanext-steel-manifold-passport",
-        "sourceDocumentId": "src-sanext-steel-manifold-passport",
-        "section": "Назначение и область применения",
-        "locationNote": "Публичный PDF-паспорт коллектора содержит раздел назначения и области применения.",
-        "quote": "Паспорт описывает назначение и область применения стального коллектора."
+        "id": "cit-stout-steel-manifold-dn32",
+        "sourceDocumentId": "src-stout-steel-manifold-dn32",
+        "section": "Карточка товара / технический паспорт",
+        "locationNote": "Публичная карточка товара указывает коллектор STOUT DN32 на 2 отопительных контура, артикул SDG-0016-005002, и ссылку на технический паспорт.",
+        "quote": "Коллектор Stout стальной распределительный 2 отопительных контура. В теплоизоляции DN 32, SDG-0016-005002."
       }
     ],
     "applicability": [
@@ -151,6 +151,64 @@
       }
     ],
     "notes": "Источник является кандидатом. Для котельной может потребоваться другой тип коллектора и другой паспорт."
+  },
+  {
+    "id": "req-pilot-pipe-spec-source-required",
+    "title": "Для труб pilot kit нужен источник сортамента и статуса применимости",
+    "text": "Трубопроводы pilot kit должны иметь DN, материал/тип, sourceDocumentId и статус review_required, чтобы чертеж не скрывал происхождение параметров труб.",
+    "category": "documentation",
+    "status": "review_required",
+    "extractionMethod": "manual",
+    "confidence": 0.4,
+    "citations": [
+      {
+        "id": "cit-gost-3262-75-vgp-scope",
+        "sourceDocumentId": "src-gost-3262-75",
+        "section": "Область применения / сортамент",
+        "locationNote": "Публичная справочная публикация ГОСТ 3262-75 описывает ВГП трубы для водопроводов, газопроводов и систем отопления, включая размеры DN25/DN32.",
+        "quote": "Стандарт распространяется на стальные сварные трубы, применяемые для водопроводов и газопроводов, систем отопления."
+      }
+    ],
+    "applicability": [
+      {
+        "id": "app-pilot-pipe-routes",
+        "subject": "drawing_element",
+        "fieldPath": "kind",
+        "operator": "equals",
+        "value": "pipe",
+        "description": "Применяется к pilot pipe specs для подачи, обратки и газа."
+      }
+    ],
+    "notes": "ГОСТ 3262-75 не является автоматическим разрешением выбранной схемы. Он фиксирует источник сортамента труб для pilot drawing."
+  },
+  {
+    "id": "req-pilot-valve-spec-source-required",
+    "title": "Для pilot-арматуры нужен источник типоразмера",
+    "text": "Запорная арматура pilot kit должна иметь DN, тип, sourceDocumentId и статус review_required; конкретный производитель и модель требуют инженерного выбора.",
+    "category": "documentation",
+    "status": "review_required",
+    "extractionMethod": "manual",
+    "confidence": 0.35,
+    "citations": [
+      {
+        "id": "cit-dn-ball-valve-bv3232p-du32",
+        "sourceDocumentId": "src-dn-ball-valve-bv3232p",
+        "section": "Технические характеристики",
+        "locationNote": "Публичный PDF содержит типоразмеры шаровых кранов, включая Ду25 и Ду32, и данные о давлении для ряда моделей.",
+        "quote": "В таблицах типоразмеров шаровых кранов приведены диаметры Ду25 и Ду32."
+      }
+    ],
+    "applicability": [
+      {
+        "id": "app-pilot-valves",
+        "subject": "drawing_element",
+        "fieldPath": "kind",
+        "operator": "equals",
+        "value": "valve",
+        "description": "Применяется к pilot valve symbols/specs на листе."
+      }
+    ],
+    "notes": "Источник используется как кандидат для типоразмера арматуры, а не как окончательный подбор модели."
   },
   {
     "id": "req-efficiency-calculation-source-separated-from-layout",

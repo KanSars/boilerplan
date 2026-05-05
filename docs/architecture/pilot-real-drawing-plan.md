@@ -66,10 +66,13 @@
 На момент создания этого документа уже есть:
 
 - pilot-котел `rgt-100-ksva-100` с `review_required` паспортными данными;
-- pilot-коллекторы подачи и обратки;
+- pilot-коллекторы подачи и обратки на базе `STOUT SDG-0016-005002` с `review_required` source/status;
+- pilot pipe specs: T1/T2 DN32 ВГП, газ DN25 ВГП и дымоход DN200 с `review_required` source/status;
+- pilot valve spec: шаровые краны DN25/DN32 как источник-кандидат для арматуры;
+- `PilotDrawingEvidenceReportService`, который формирует структурированный evidence/status report для листа;
 - план помещения, принципиальная схема и предпросмотр листа;
 - SVG листа и DXF export через drawing/CAD model;
 - viewport/bounds validation для листа;
 - первые DN/паспортные подписи, связанные с `ConnectionPoint` и metadata.
 
-Главный следующий фокус: заменить условные координаты и pilot-коллекторы на более проверенные данные источников, затем сделать evidence/status report для полученного листа.
+Главный следующий фокус: показать evidence/status report в UI или export, затем отдельно заменить оставшиеся условные координаты патрубков на координаты из проверенных заводских чертежей.

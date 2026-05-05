@@ -15,6 +15,7 @@ export type PipingRoute = {
   };
   polylinePoints: PointMm[];
   nominalDiameterMm?: number;
+  metadata?: Record<string, unknown>;
   calculationStatus: "not_calculated" | "preliminary" | "calculated";
   warnings: string[];
 };

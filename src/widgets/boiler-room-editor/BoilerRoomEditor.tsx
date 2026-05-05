@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
 import type { EquipmentInstance } from "@/domain/equipment/EquipmentInstance";
 import { EquipmentDefinitionEditorPanel } from "@/features/boiler-room-editor/EquipmentDefinitionEditorPanel";
 import { ExportPanel } from "@/features/boiler-room-editor/ExportPanel";
 import { EquipmentCatalogPanel } from "@/features/boiler-room-editor/EquipmentCatalogPanel";
 import { LayoutSvgEditor } from "@/features/boiler-room-editor/LayoutSvgEditor";
+import { MissingQuestionsPanel } from "@/features/boiler-room-editor/MissingQuestionsPanel";
 import { PrincipleSchematicView } from "@/features/boiler-room-editor/PrincipleSchematicView";
 import { PropertiesPanel } from "@/features/boiler-room-editor/PropertiesPanel";
 import { RoomSettingsPanel } from "@/features/boiler-room-editor/RoomSettingsPanel";
@@ -14,6 +15,9 @@ import { SheetDrawingPreview } from "@/features/boiler-room-editor/SheetDrawingP
 import { ValidationPanel } from "@/features/boiler-room-editor/ValidationPanel";
 import { MockAiValidationExplainer } from "@/infrastructure/ai/MockAiValidationExplainer";
 import { BoilerRoomSheetDrawingService } from "@/infrastructure/drawing/BoilerRoomSheetDrawingService";
+import { MissingDataQuestionnaireService, formatMissingDataQuestionnaireText } from "@/infrastructure/evidence/MissingDataQuestionnaireService";
+import { PilotDrawingEvidenceReportService } from "@/infrastructure/evidence/PilotDrawingEvidenceReportService";
+import { typicalStandaloneBoilerRoomEvidenceDataset } from "@/infrastructure/evidence/typicalStandaloneBoilerRoomEvidence";
 import { EngineeringSheetSvgExporter } from "@/infrastructure/exporters/EngineeringSheetSvgExporter";
 import { CsvEquipmentScheduleExporter } from "@/infrastructure/exporters/CsvEquipmentScheduleExporter";
 import { DxfProjectExporter } from "@/infrastructure/exporters/DxfProjectExporter";
@@ -66,9 +70,12 @@ const sheetSvgExporter = new EngineeringSheetSvgExporter();
 const csvExporter = new CsvEquipmentScheduleExporter();
 const dxfExporter = new DxfProjectExporter();
 const aiExplainer = new MockAiValidationExplainer();
+const evidenceReportService = new PilotDrawingEvidenceReportService();
+const missingDataQuestionnaireService = new MissingDataQuestionnaireService();
 
 export function BoilerRoomEditor() {
   const dispatch = useAppDispatch();
+  const [missingQuestionsOpen, setMissingQuestionsOpen] = useState(false);
   const project = useAppSelector(selectProject);
   const equipmentDefinitions = useAppSelector(selectEquipmentDefinitions);
   const editedDefinition = useAppSelector(selectEditedEquipmentDefinition);
@@ -88,6 +95,14 @@ export function BoilerRoomEditor() {
   const sheetDrawing = useMemo(
     () => sheetDrawingService.create(projectWithValidation, equipmentDefinitions),
     [equipmentDefinitions, projectWithValidation],
+  );
+  const drawingEvidenceReport = useMemo(
+    () => evidenceReportService.create(sheetDrawing, projectWithValidation, equipmentDefinitions, typicalStandaloneBoilerRoomEvidenceDataset),
+    [equipmentDefinitions, projectWithValidation, sheetDrawing],
+  );
+  const missingDataQuestionnaire = useMemo(
+    () => missingDataQuestionnaireService.create(drawingEvidenceReport),
+    [drawingEvidenceReport],
   );
 
   const deleteSelectedEquipment = useCallback(() => {
@@ -124,7 +139,7 @@ export function BoilerRoomEditor() {
       definitionId: definition.id,
       position: { xMm: 900 + sameDefinitionCount * 350, yMm: definition.category === "header" ? 450 + sameDefinitionCount * 900 : 3000 + boilerCount * 350 },
       rotationDeg: 0,
-      label: definition.category === "boiler" ? `B-${boilerCount}` : `${definition.name} ${sameDefinitionCount}`,
+      label: definition.category === "boiler" ? `B-${boilerCount}` : definition.category === "valve" ? `Кран ${sameDefinitionCount}` : `${definition.name} ${sameDefinitionCount}`,
     };
     dispatch(addEquipmentInstance(instance));
     dispatch(selectEquipmentInstance(instance.id));
@@ -171,7 +186,12 @@ export function BoilerRoomEditor() {
           onExportSheetSvg={() => downloadTextFile("boiler-room-sheet.svg", sheetSvgExporter.export(sheetDrawing), "image/svg+xml")}
           onExportCsv={() => downloadTextFile("equipment-schedule.csv", csvExporter.export(projectWithValidation, exportContext), "text/csv")}
           onExportDxf={() => downloadTextFile("boiler-room-sheet.dxf", dxfExporter.export(projectWithValidation, exportContext), "application/dxf")}
+          onToggleMissingQuestions={() => setMissingQuestionsOpen((open) => !open)}
+          onExportMissingQuestions={() => downloadTextFile("boiler-room-open-questions.txt", formatMissingDataQuestionnaireText(missingDataQuestionnaire), "text/plain;charset=utf-8")}
+          missingQuestionsOpen={missingQuestionsOpen}
+          canExportMissingQuestions={missingDataQuestionnaire.questions.length > 0}
         />
+        {missingQuestionsOpen && <MissingQuestionsPanel questionnaire={missingDataQuestionnaire} />}
         <div className="view-layout-toolbar" aria-label="Расположение инженерных видов">
           <span>Расположение экранов</span>
           <button

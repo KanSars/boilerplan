@@ -54,10 +54,10 @@
       "id": "supply-header"
     },
     "requirementId": "req-typical-collector-source-document-required",
-    "citationIds": ["cit-sanext-steel-manifold-passport"],
+    "citationIds": ["cit-stout-steel-manifold-dn32"],
     "relation": "documents_source",
     "status": "review_required",
-    "note": "Фиксирует кандидат источника для коллектора; применимость к котельной требует проверки."
+    "note": "Фиксирует источник-кандидат STOUT DN32 для коллектора подачи; применимость к котельной требует проверки."
   },
   {
     "id": "evlink-equipment-return-header-source",
@@ -66,9 +66,33 @@
       "id": "return-header"
     },
     "requirementId": "req-typical-collector-source-document-required",
-    "citationIds": ["cit-sanext-steel-manifold-passport"],
+    "citationIds": ["cit-stout-steel-manifold-dn32"],
     "relation": "documents_source",
     "status": "review_required",
-    "note": "Фиксирует кандидат источника для коллектора; применимость к котельной требует проверки."
+    "note": "Фиксирует источник-кандидат STOUT DN32 для коллектора обратки; применимость к котельной требует проверки."
+  },
+  {
+    "id": "evlink-pilot-pipe-specs-source",
+    "target": {
+      "kind": "drawing_element",
+      "id": "pilot-sheet-pipe-specs"
+    },
+    "requirementId": "req-pilot-pipe-spec-source-required",
+    "citationIds": ["cit-gost-3262-75-vgp-scope"],
+    "relation": "documents_source",
+    "status": "review_required",
+    "note": "Связывает pilot pipe specs DN25/DN32 с источником сортамента ВГП труб."
+  },
+  {
+    "id": "evlink-pilot-valve-specs-source",
+    "target": {
+      "kind": "drawing_element",
+      "id": "pilot-sheet-valve-specs"
+    },
+    "requirementId": "req-pilot-valve-spec-source-required",
+    "citationIds": ["cit-dn-ball-valve-bv3232p-du32"],
+    "relation": "documents_source",
+    "status": "review_required",
+    "note": "Связывает pilot valve specs DN25/DN32 с источником-кандидатом по шаровым кранам."
   }
 ]

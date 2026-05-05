@@ -4,6 +4,7 @@ export type EquipmentCategory =
   | "boiler"
   | "pump"
   | "header"
+  | "valve"
   | "tank"
   | "sensor"
   | "cabinet"

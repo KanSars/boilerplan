@@ -1,11 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { removeEquipmentInstance } from "@/domain/project/removeEquipmentInstance";
+import { createInitialProject } from "@/store/createInitialProject";
 import { SimpleOrthogonalPipeRouter } from "@/infrastructure/piping/SimpleOrthogonalPipeRouter";
 import { DemoInternalStandardsProfile } from "@/infrastructure/standards/DemoInternalStandardsProfile";
 import { ValidationEngine } from "@/domain/validation/ValidationEngine";
 import { definitions, makeProject } from "@/tests/testFixtures";
 
 describe("project updates", () => {
+  it("keeps valves as ordinary equipment instances instead of drawing-only symbols", () => {
+    const project = createInitialProject();
+
+    expect(project.equipmentInstances).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "inst_valve_supply_1",
+        definitionId: "ball-valve-dn32-supply",
+      }),
+      expect.objectContaining({
+        id: "inst_valve_gas_1",
+        definitionId: "ball-valve-dn25-gas",
+      }),
+    ]));
+  });
+
   it("deletes equipment instances and connected piping routes", () => {
     const project = makeProject();
     project.equipmentInstances.push(

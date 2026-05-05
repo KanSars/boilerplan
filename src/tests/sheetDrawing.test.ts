@@ -15,6 +15,8 @@ describe("pilot sheet drawing", () => {
       { id: "inst_supply_header", definitionId: "supply-header", position: { xMm: 900, yMm: 700 }, rotationDeg: 0, label: "Коллектор подачи" },
       { id: "inst_return_header", definitionId: "return-header", position: { xMm: 900, yMm: 1250 }, rotationDeg: 0, label: "Коллектор обратки" },
       { id: "inst_boiler_1", definitionId: "rgt-100-ksva-100", position: { xMm: 1550, yMm: 2850 }, rotationDeg: 0, label: "К1" },
+      { id: "inst_valve_supply_1", definitionId: "ball-valve-dn32-supply", position: { xMm: 1800, yMm: 2500 }, rotationDeg: 0, label: "Кран T1" },
+      { id: "inst_valve_return_1", definitionId: "ball-valve-dn32-return", position: { xMm: 1650, yMm: 2600 }, rotationDeg: 0, label: "Кран T2" },
     ];
     project.pipingRoutes = new SimpleOrthogonalPipeRouter().generateRoutes(project, context);
 
@@ -32,7 +34,30 @@ describe("pilot sheet drawing", () => {
     expect(text).toContain("Дымоход DN200");
     expect(text).toContain("N=99 кВт");
     expect(text).toContain("src-rgt-100-500-passport");
-    expect(drawing.entities.some((entity) => entity.layer === "VALVE_SYMBOL")).toBe(true);
+    expect(text).toContain("STOUT SDG-0016-005002 DN32");
+    expect(text).toContain("T1/T2 DN32 Ø42.3x3.2");
+    expect(text).toContain("src-dn-ball-valve-bv3232p");
+    expect(drawing.entities.filter((entity) => entity.layer === "VALVE_SYMBOL").length).toBeGreaterThan(3);
+  });
+
+  it("keeps valve symbols readable on the process diagram", () => {
+    const drawing = new BoilerRoomSheetDrawingService().create(makeProject(), definitions);
+    const valveCenters = drawing.entities
+      .filter((entity) => entity.layer === "VALVE_SYMBOL" && entity.type === "polyline")
+      .map((entity) => entity.points[1])
+      .filter((point, index, points) =>
+        points.findIndex((otherPoint) => otherPoint.x === point.x && otherPoint.y === point.y) === index,
+      );
+
+    for (let outerIndex = 0; outerIndex < valveCenters.length; outerIndex += 1) {
+      for (let innerIndex = outerIndex + 1; innerIndex < valveCenters.length; innerIndex += 1) {
+        const distance = Math.hypot(
+          valveCenters[outerIndex].x - valveCenters[innerIndex].x,
+          valveCenters[outerIndex].y - valveCenters[innerIndex].y,
+        );
+        expect(distance).toBeGreaterThanOrEqual(9);
+      }
+    }
   });
 
   it("drives schematic labels from equipment connection points and passport facts", () => {

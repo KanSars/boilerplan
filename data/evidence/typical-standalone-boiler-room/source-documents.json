@@ -82,5 +82,41 @@
     "retrievedAtIso": "2026-05-04T00:00:00.000Z",
     "status": "review_required",
     "notes": "Публичный PDF-паспорт коллектора. Требуется проверить применимость к коллектору котельной, а не квартирному узлу."
+  },
+  {
+    "id": "src-stout-steel-manifold-dn32",
+    "kind": "manufacturer_manual",
+    "title": "STOUT стальной распределительный коллектор DN32 SDG-0016-005002",
+    "version": "public product page / passport link",
+    "publisher": "STOUT / Tavago",
+    "language": "ru",
+    "sourceUri": "https://tavago.ru/armatura-dlya-obvyazki-truboprovodov/kollektory/stout/stout-stalnoy-raspredelitelnyy-kollektor-2-otopite100012259.html",
+    "retrievedAtIso": "2026-05-05T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Публичная карточка товара указывает распределительный коллектор STOUT DN32 на 2 отопительных контура, артикул SDG-0016-005002, и ссылку на технический паспорт. Габариты и координаты патрубков требуют сверки с паспортом/чертежом."
+  },
+  {
+    "id": "src-gost-3262-75",
+    "kind": "gost",
+    "title": "ГОСТ 3262-75. Трубы стальные водогазопроводные. Технические условия",
+    "version": "public reference",
+    "publisher": "Госстандарт СССР / публичные справочные источники",
+    "language": "ru",
+    "sourceUri": "https://docs.cntd.ru/document/1200001411",
+    "retrievedAtIso": "2026-05-05T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Источник-кандидат для pilot pipe specs DN25/DN32: ВГП трубы для водопроводов, газопроводов и систем отопления. Требуется инженерная проверка применимости к конкретной котельной и газовой линии."
+  },
+  {
+    "id": "src-dn-ball-valve-bv3232p",
+    "kind": "manufacturer_manual",
+    "title": "Технические характеристики на краны шаровые DN BV3232P",
+    "version": "public PDF",
+    "publisher": "DN / НТ-РТ",
+    "language": "ru",
+    "sourceUri": "https://dn.nt-rt.ru/images/manuals/kran.pdf",
+    "retrievedAtIso": "2026-05-05T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Публичный PDF с типоразмерами шаровых кранов, включая Ду25 и Ду32. Используется как источник-кандидат для pilot valve spec; конкретная модель арматуры требует выбора инженером."
   }
 ]

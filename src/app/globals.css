@@ -295,6 +295,17 @@ select {
   font-size: 12px;
 }
 
+.action-bar button.active {
+  border-color: #0f766e;
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.action-bar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .secondary-button.compact,
 .danger-button.compact {
   min-height: 26px;
@@ -315,6 +326,11 @@ select {
 .action-bar button:nth-child(n+3),
 .secondary-button {
   background: #ffffff;
+  color: #0f766e;
+}
+
+.action-bar button:nth-child(n+3).active {
+  background: #ccfbf1;
   color: #0f766e;
 }
 
@@ -678,6 +694,29 @@ select {
   stroke: #2563eb;
 }
 
+.schematic-valve path {
+  fill: #ffffff;
+  stroke: #111827;
+  stroke-width: 2px;
+}
+
+.schematic-valve.supply path,
+.schematic-valve.supply text {
+  stroke: #dc2626;
+  fill: #b91c1c;
+}
+
+.schematic-valve.return path,
+.schematic-valve.return text {
+  stroke: #2563eb;
+  fill: #1d4ed8;
+}
+
+.schematic-valve text {
+  font-size: 10px;
+  stroke: none;
+}
+
 .properties dl {
   display: grid;
   grid-template-columns: 90px 1fr;
@@ -747,6 +786,72 @@ select {
   font-size: 13px;
   line-height: 1.35;
   margin-bottom: 10px;
+}
+
+.missing-questions-panel {
+  max-height: 230px;
+  overflow: auto;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.missing-questions-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.missing-questions-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.missing-questions-header h2 {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.missing-questions-header p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.missing-question-list {
+  display: grid;
+  gap: 7px;
+}
+
+.missing-question {
+  border-left: 4px solid #d97706;
+  border-radius: 6px;
+  background: #fffbeb;
+  padding: 8px;
+}
+
+.missing-question.closed {
+  border-left-color: #0f766e;
+  background: #ecfdf5;
+}
+
+.missing-question strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.missing-question p,
+.missing-question small {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 @media (max-width: 1100px) {

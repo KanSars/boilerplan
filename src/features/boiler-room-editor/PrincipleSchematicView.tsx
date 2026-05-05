@@ -50,6 +50,7 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
           const from = nodePositions.get(connection.from.equipmentInstanceId);
           const to = connection.to ? nodePositions.get(connection.to.equipmentInstanceId) : undefined;
           const isSupply = connection.systemType === "supply";
+          const schematicSystemType: "supply" | "return" = isSupply ? "supply" : "return";
           const boiler = equipmentInstances.find((instance) => instance.id === connection.from.equipmentInstanceId);
           const boilerPosition = from ?? (boiler ? nodePositions.get(boiler.id) : undefined);
 
@@ -71,6 +72,17 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
                 {connection.status === "ambiguous" && (
                   <text className="schematic-warning" x={(from.x + to.x) / 2 + 35} y={(from.y + to.y) / 2 + 82}>Несколько вариантов подключения</text>
                 )}
+                {equipmentInstances
+                  .filter((instance) => getCategory(instance, definitions) === "valve" && hasConnection(instance, definitions, schematicSystemType))
+                  .map((component, index) => (
+                    <SchematicValve
+                      key={component.id}
+                      component={component}
+                      systemType={schematicSystemType}
+                      x={(from.x + to.x) / 2 + 15 + index * 34}
+                      y={(from.y + to.y) / 2 + (isSupply ? 6 : 42)}
+                    />
+                  ))}
               </g>
             );
           }
@@ -112,6 +124,15 @@ export function PrincipleSchematicView({ equipmentInstances, definitions, system
         </div>
       </div>
     </div>
+  );
+}
+
+function SchematicValve({ component, systemType, x, y }: { component: EquipmentInstance; systemType: "supply" | "return"; x: number; y: number }) {
+  return (
+    <g className={`schematic-valve ${systemType}`}>
+      <path d={`M ${x - 10} ${y} L ${x} ${y - 10} L ${x + 10} ${y} L ${x} ${y + 10} Z`} />
+      <text x={x - 20} y={y + 26}>{component.label}</text>
+    </g>
   );
 }
 
