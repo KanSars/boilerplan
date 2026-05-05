@@ -56,6 +56,14 @@ export class EngineeringDrawingToCadService {
         }];
       }
       if (entity.type === "polyline") {
+        if (!entity.closed && entity.points.length === 2) {
+          return [{
+            type: "line" as const,
+            layer,
+            start: { xMm: entity.points[0].x, yMm: toCadY(drawing, entity.points[0].y) },
+            end: { xMm: entity.points[1].x, yMm: toCadY(drawing, entity.points[1].y) },
+          }];
+        }
         return [{
           type: "polyline" as const,
           layer,

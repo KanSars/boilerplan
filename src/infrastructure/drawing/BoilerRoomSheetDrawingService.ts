@@ -1,4 +1,4 @@
-import type { EngineeringDrawing, DrawingEntity, DrawingLayer } from "@/domain/drawing";
+import type { EngineeringDrawing, DrawingEntity, DrawingLayer, DrawingViewport } from "@/domain/drawing";
 import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
 import { getEquipmentBodyRect } from "@/domain/geometry/rectangles";
 import { getWorldConnectionPointsForInstance } from "@/domain/geometry/transforms";
@@ -7,6 +7,13 @@ import type { Project } from "@/domain/project/Project";
 
 const sheetWidth = 420;
 const sheetHeight = 297;
+const viewports: DrawingViewport[] = [
+  { name: "frame", x: 5, y: 5, width: 410, height: 287 },
+  { name: "plan", x: 15, y: 30, width: 185, height: 124 },
+  { name: "schematic", x: 215, y: 30, width: 198, height: 150 },
+  { name: "legend", x: 15, y: 180, width: 190, height: 55 },
+  { name: "titleBlock", x: 260, y: 252, width: 155, height: 40 },
+];
 
 const layers: DrawingLayer[] = [
   { name: "SHEET_FRAME", stroke: "#111827", fill: "none", strokeWidth: 0.35 },
@@ -47,6 +54,7 @@ export class BoilerRoomSheetDrawingService {
         height: sheetHeight,
       },
       layers,
+      viewports,
       entities,
       metadata: {
         title: `${project.name}. Пилотный чертеж котельной`,
@@ -86,8 +94,9 @@ export class BoilerRoomSheetDrawingService {
     project: Project,
     equipmentDefinitions: EquipmentDefinition[],
   ) {
-    const origin = { x: 15, y: 36 };
-    const size = { width: 180, height: 118 };
+    const viewport = getViewport("plan");
+    const origin = { x: viewport.x, y: viewport.y + 6 };
+    const size = { width: viewport.width, height: viewport.height - 6 };
     const scale = Math.min(size.width / project.room.widthMm, size.height / project.room.lengthMm);
 
     entities.push(
@@ -105,7 +114,7 @@ export class BoilerRoomSheetDrawingService {
       const height = Math.max(body.depthMm * scale, 4);
       entities.push(rect(x, y, width, height, "EQUIPMENT_SYMBOL", "#f8fafc"));
       this.addEquipmentGlyph(entities, definition.category, x, y, width, height);
-      entities.push(text(x + width / 2, y + height / 2 + 1.2, instance.label, 2.5, "ANNOTATION", "bold", "middle"));
+      entities.push(text(x + width / 2, y + height / 2 + 1.2, getPlanLabel(instance.label, definition.category), 2.1, "ANNOTATION", "bold", "middle"));
 
       for (const point of getWorldConnectionPointsForInstance(instance, definition)) {
         entities.push(circle(origin.x + point.worldPosition.xMm * scale, origin.y + point.worldPosition.yMm * scale, 1.2, "PORT_MARK"));
@@ -128,9 +137,11 @@ export class BoilerRoomSheetDrawingService {
     supplyHeaderId?: string,
     returnHeaderId?: string,
   ) {
-    const x0 = 225;
-    const y0 = 38;
-    entities.push(text(x0, y0 - 8, "Технологическая схема подключений (без масштаба)", 3.2, "ANNOTATION", "bold"));
+    const viewport = getViewport("schematic");
+    const localEntities: DrawingEntity[] = [];
+    const x0 = 10;
+    const y0 = 8;
+    localEntities.push(text(x0, y0 - 2, "Технологическая схема подключений (без масштаба)", 3.2, "ANNOTATION", "bold"));
 
     const boiler = project.equipmentInstances.find((instance) => instance.id === boilerId);
     const boilerDefinition = boiler ? equipmentDefinitions.find((definition) => definition.id === boiler.definitionId) : undefined;
@@ -138,60 +149,63 @@ export class BoilerRoomSheetDrawingService {
       ? `${boiler.label}: ${boilerDefinition.manufacturer ?? ""} ${boilerDefinition.model ?? boilerDefinition.name}`
       : "К1: котел";
     const boilerBox = { x: x0, y: y0 + 38, width: 58, height: 48 };
-    this.addBoilerSymbol(entities, boilerBox.x, boilerBox.y, boilerBox.width, boilerBox.height, boilerTitle);
+    this.addBoilerSymbol(localEntities, boilerBox.x, boilerBox.y, boilerBox.width, boilerBox.height, boilerTitle);
 
     const supply = { x: x0 + 105, y: y0 + 28, width: 88, height: 12 };
     const ret = { x: x0 + 105, y: y0 + 84, width: 88, height: 12 };
-    this.addHeaderSymbol(entities, supply.x, supply.y, supply.width, supply.height, "КП1 Коллектор подачи", "PIPE_SUPPLY");
-    this.addHeaderSymbol(entities, ret.x, ret.y, ret.width, ret.height, "КО1 Коллектор обратки", "PIPE_RETURN");
+    this.addHeaderSymbol(localEntities, supply.x, supply.y, supply.width, supply.height, "КП1 Коллектор подачи", "PIPE_SUPPLY");
+    this.addHeaderSymbol(localEntities, ret.x, ret.y, ret.width, ret.height, "КО1 Коллектор обратки", "PIPE_RETURN");
 
     const supplyDn = getConnectionDn(boilerDefinition, "supply") ?? 32;
     const returnDn = getConnectionDn(boilerDefinition, "return") ?? 32;
     const gasDn = getConnectionDn(boilerDefinition, "gas") ?? 25;
     const flueDn = getConnectionDn(boilerDefinition, "flue") ?? 200;
 
-    this.addPipeRun(entities, [
+    this.addPipeRun(localEntities, [
       { x: boilerBox.x + boilerBox.width, y: boilerBox.y + 12 },
       { x: supply.x - 18, y: boilerBox.y + 12 },
       { x: supply.x - 18, y: supply.y + supply.height / 2 },
       { x: supply.x, y: supply.y + supply.height / 2 },
     ], "PIPE_SUPPLY", `T1 DN${supplyDn}`);
 
-    this.addPipeRun(entities, [
+    this.addPipeRun(localEntities, [
       { x: boilerBox.x + boilerBox.width, y: boilerBox.y + 34 },
       { x: ret.x - 25, y: boilerBox.y + 34 },
       { x: ret.x - 25, y: ret.y + ret.height / 2 },
       { x: ret.x, y: ret.y + ret.height / 2 },
     ], "PIPE_RETURN", `T2 DN${returnDn}`);
 
-    this.addPipeRun(entities, [
+    this.addPipeRun(localEntities, [
       { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y + boilerBox.height },
       { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y + boilerBox.height + 24 },
       { x: boilerBox.x - 30, y: boilerBox.y + boilerBox.height + 24 },
     ], "PIPE_GAS", `Г DN${gasDn}`);
 
-    this.addPipeRun(entities, [
+    this.addPipeRun(localEntities, [
       { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y },
       { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y - 26 },
     ], "PIPE_FLUE", `Дымоход DN${flueDn}`);
 
-    entities.push(
+    localEntities.push(
       text(boilerBox.x - 33, boilerBox.y + boilerBox.height + 27, "Ввод газа", 2.6, "ANNOTATION"),
       text(boilerBox.x + boilerBox.width / 2 + 5, boilerBox.y - 22, "Дымовые газы", 2.6, "ANNOTATION"),
-      text(supply.x + supply.width + 8, supply.y + 7, "К системе отопления", 2.6, "ANNOTATION"),
-      text(ret.x + ret.width + 8, ret.y + 7, "От системы отопления", 2.6, "ANNOTATION"),
+      text(supply.x + supply.width, supply.y + 17, "к системе", 2.4, "ANNOTATION", "normal", "end"),
+      text(ret.x + ret.width, ret.y + 17, "от системы", 2.4, "ANNOTATION", "normal", "end"),
       text(x0, 165, "Котел работает с принудительной циркуляцией. Запуск без циркуляции запрещен по паспорту RGT.", 2.6, "WARNING"),
       text(x0, 171, "DN и габариты для RGT-100/КСВА-100 взяты из публичного паспорта; координаты портов условные.", 2.6, "WARNING"),
     );
 
     if (!supplyHeaderId || !returnHeaderId) {
-      entities.push(text(x0, 178, "Нет размещенных коллекторов подачи/обратки: схема требует проверки.", 2.6, "WARNING"));
+      localEntities.push(text(x0, 148, "Нет размещенных коллекторов подачи/обратки: схема требует проверки.", 2.6, "WARNING"));
     }
+
+    entities.push(...fitEntitiesToViewport(localEntities, viewport, 2));
   }
 
   private addLegend(entities: DrawingEntity[]) {
-    const x = 15;
-    const y = 180;
+    const viewport = getViewport("legend");
+    const x = viewport.x;
+    const y = viewport.y;
     entities.push(text(x, y, "Условные обозначения", 3.2, "ANNOTATION", "bold"));
     this.addPipeRun(entities, [{ x, y: y + 9 }, { x: x + 28, y: y + 9 }], "PIPE_SUPPLY", "T1 подача");
     this.addPipeRun(entities, [{ x, y: y + 20 }, { x: x + 28, y: y + 20 }], "PIPE_RETURN", "T2 обратка");
@@ -335,3 +349,84 @@ const pipeLayer = (systemType: PipingSystemType): "PIPE_SUPPLY" | "PIPE_RETURN" 
 
 const getConnectionDn = (definition: EquipmentDefinition | undefined, type: "supply" | "return" | "gas" | "flue"): number | undefined =>
   definition?.connectionPoints.find((point) => point.type === type)?.nominalDiameterMm;
+
+const getPlanLabel = (label: string, category: string): string => {
+  if (category !== "header") return label.length > 8 ? label.slice(0, 8) : label;
+  if (label.toLowerCase().includes("пода")) return "КП1";
+  if (label.toLowerCase().includes("обрат")) return "КО1";
+  return "К";
+};
+
+const getViewport = (name: DrawingViewport["name"]): DrawingViewport => {
+  const viewport = viewports.find((item) => item.name === name);
+  if (!viewport) throw new Error(`Missing drawing viewport: ${name}`);
+  return viewport;
+};
+
+const fitEntitiesToViewport = (
+  entities: DrawingEntity[],
+  viewport: DrawingViewport,
+  padding: number,
+): DrawingEntity[] => {
+  const bounds = getEntitiesBounds(entities);
+  const availableWidth = viewport.width - padding * 2;
+  const availableHeight = viewport.height - padding * 2;
+  const scale = Math.min(1, availableWidth / bounds.width, availableHeight / bounds.height);
+  const dx = viewport.x + padding + (availableWidth - bounds.width * scale) / 2 - bounds.xMin * scale;
+  const dy = viewport.y + padding + (availableHeight - bounds.height * scale) / 2 - bounds.yMin * scale;
+  return entities.map((entity) => transformEntity(entity, scale, dx, dy));
+};
+
+const getEntitiesBounds = (entities: DrawingEntity[]) => {
+  const bounds = entities.map(getEntityBounds);
+  const xMin = Math.min(...bounds.map((item) => item.xMin));
+  const yMin = Math.min(...bounds.map((item) => item.yMin));
+  const xMax = Math.max(...bounds.map((item) => item.xMax));
+  const yMax = Math.max(...bounds.map((item) => item.yMax));
+  return {
+    xMin,
+    yMin,
+    xMax,
+    yMax,
+    width: Math.max(1, xMax - xMin),
+    height: Math.max(1, yMax - yMin),
+  };
+};
+
+const transformEntity = (entity: DrawingEntity, scale: number, dx: number, dy: number): DrawingEntity => {
+  if (entity.type === "rect") {
+    return { ...entity, x: entity.x * scale + dx, y: entity.y * scale + dy, width: entity.width * scale, height: entity.height * scale };
+  }
+  if (entity.type === "circle") {
+    return { ...entity, center: transformPoint(entity.center, scale, dx, dy), radius: entity.radius * scale };
+  }
+  if (entity.type === "polyline") {
+    return { ...entity, points: entity.points.map((point) => transformPoint(point, scale, dx, dy)) };
+  }
+  return { ...entity, at: transformPoint(entity.at, scale, dx, dy), height: entity.height * scale };
+};
+
+const transformPoint = (point: Point, scale: number, dx: number, dy: number): Point => ({
+  x: point.x * scale + dx,
+  y: point.y * scale + dy,
+});
+
+const getEntityBounds = (entity: DrawingEntity) => {
+  if (entity.type === "rect") {
+    return { xMin: entity.x, yMin: entity.y, xMax: entity.x + entity.width, yMax: entity.y + entity.height };
+  }
+  if (entity.type === "circle") {
+    return { xMin: entity.center.x - entity.radius, yMin: entity.center.y - entity.radius, xMax: entity.center.x + entity.radius, yMax: entity.center.y + entity.radius };
+  }
+  if (entity.type === "polyline") {
+    return {
+      xMin: Math.min(...entity.points.map((point) => point.x)),
+      yMin: Math.min(...entity.points.map((point) => point.y)),
+      xMax: Math.max(...entity.points.map((point) => point.x)),
+      yMax: Math.max(...entity.points.map((point) => point.y)),
+    };
+  }
+  const estimatedWidth = entity.value.length * entity.height * 0.58;
+  const xMin = entity.align === "middle" ? entity.at.x - estimatedWidth / 2 : entity.align === "end" ? entity.at.x - estimatedWidth : entity.at.x;
+  return { xMin, yMin: entity.at.y - entity.height, xMax: xMin + estimatedWidth, yMax: entity.at.y + entity.height * 0.25 };
+};

@@ -35,6 +35,16 @@ export type DrawingRect = {
   fill?: string;
 };
 
+export type DrawingViewportName = "frame" | "plan" | "schematic" | "legend" | "titleBlock";
+
+export type DrawingViewport = {
+  name: DrawingViewportName;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type DrawingPolyline = {
   type: "polyline";
   layer: DrawingLayerName;
@@ -73,6 +83,7 @@ export type EngineeringDrawing = {
     height: number;
   };
   layers: DrawingLayer[];
+  viewports: DrawingViewport[];
   entities: DrawingEntity[];
   metadata: {
     title: string;

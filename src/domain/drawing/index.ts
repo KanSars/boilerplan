@@ -7,5 +7,7 @@ export type {
   DrawingPolyline,
   DrawingRect,
   DrawingText,
+  DrawingViewport,
+  DrawingViewportName,
   EngineeringDrawing,
 } from "@/domain/drawing/EngineeringDrawing";

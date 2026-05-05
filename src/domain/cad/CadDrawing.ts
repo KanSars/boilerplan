@@ -27,6 +27,13 @@ export type CadPolyline = {
   closed?: boolean;
 };
 
+export type CadLine = {
+  type: "line";
+  layer: CadLayerName;
+  start: PointMm;
+  end: PointMm;
+};
+
 export type CadCircle = {
   type: "circle";
   layer: CadLayerName;
@@ -43,7 +50,7 @@ export type CadText = {
   rotationDeg?: number;
 };
 
-export type CadEntity = CadPolyline | CadCircle | CadText;
+export type CadEntity = CadPolyline | CadLine | CadCircle | CadText;
 
 export type CadDrawing = {
   version: "AC1015";

@@ -45,10 +45,12 @@ describe("exporters", () => {
     expect(output).toContain("ME_PIPE_SUPPLY");
     expect(output).toContain("ME_PIPE_RETURN");
     expect(output).toContain("ME_VALVE");
+    expect(output).toContain("LINE");
     expect(output).toContain("LWPOLYLINE");
     expect(output).toContain("CIRCLE");
     expect(output).toContain("TEXT");
     expect(output).toContain("AcDbPolyline");
+    expect(output).toContain("AcDbLine");
     expect(output).toContain("AcDbCircle");
     expect(output).toContain("AcDbText");
     expect(output).toContain("\\U+043F\\U+0440\\U+0435");

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BoilerRoomSheetDrawingService } from "@/infrastructure/drawing/BoilerRoomSheetDrawingService";
+import { DrawingBoundsValidator } from "@/infrastructure/drawing/DrawingBoundsValidator";
 import { EngineeringDrawingToCadService } from "@/infrastructure/drawing/EngineeringDrawingToCadService";
 import { EngineeringSheetSvgExporter } from "@/infrastructure/exporters/EngineeringSheetSvgExporter";
 import { SimpleOrthogonalPipeRouter } from "@/infrastructure/piping/SimpleOrthogonalPipeRouter";
@@ -25,10 +26,33 @@ describe("pilot sheet drawing", () => {
 
     expect(drawing.sheet.format).toBe("A3");
     expect(drawing.metadata.status).toBe("review_required");
+    expect(drawing.viewports.some((viewport) => viewport.name === "schematic")).toBe(true);
     expect(text).toContain("Технологическая схема подключений");
     expect(text).toContain("DN32");
     expect(text).toContain("Дымоход DN200");
     expect(drawing.entities.some((entity) => entity.layer === "VALVE_SYMBOL")).toBe(true);
+  });
+
+  it("keeps generated drawing entities inside the sheet and viewports", () => {
+    const drawing = new BoilerRoomSheetDrawingService().create(makeProject(), definitions);
+    const validator = new DrawingBoundsValidator();
+    const schematicViewport = drawing.viewports.find((viewport) => viewport.name === "schematic");
+    const planViewport = drawing.viewports.find((viewport) => viewport.name === "plan");
+    if (!schematicViewport || !planViewport) throw new Error("Expected drawing viewports");
+
+    const sheetIssues = validator.validateSheet(drawing);
+    const schematicEntities = drawing.entities.filter((entity) => {
+      if (entity.layer === "TITLE_BLOCK" || entity.layer === "SHEET_FRAME") return false;
+      if (entity.type === "text" && entity.at.y >= 245) return false;
+      if (entity.type === "text") return entity.at.x >= schematicViewport.x;
+      if (entity.type === "rect") return entity.x >= schematicViewport.x;
+      if (entity.type === "circle") return entity.center.x >= schematicViewport.x;
+      return entity.points.some((point) => point.x >= schematicViewport.x);
+    });
+    const schematicIssues = validator.validateViewport(schematicEntities, schematicViewport);
+
+    expect(sheetIssues).toEqual([]);
+    expect(schematicIssues).toEqual([]);
   });
 
   it("exports the same sheet drawing to SVG and CAD primitives", () => {
@@ -40,6 +64,7 @@ describe("pilot sheet drawing", () => {
     expect(svg).toContain("Пилотный чертеж");
     expect(cad.layers.some((layer) => layer.name === "SHEET_FRAME")).toBe(true);
     expect(cad.layers.some((layer) => layer.name === "ME_VALVE")).toBe(true);
+    expect(cad.entities.some((entity) => entity.type === "line")).toBe(true);
     expect(cad.entities.some((entity) => entity.type === "text" && entity.value.includes("DN"))).toBe(true);
   });
 });

@@ -99,6 +99,18 @@ export class AsciiDxfWriter {
     pair: (code: number, value: string | number) => void,
     entity: CadEntity,
   ) {
+    if (entity.type === "line") {
+      pair(0, "LINE");
+      pair(100, "AcDbEntity");
+      pair(8, entity.layer);
+      pair(100, "AcDbLine");
+      pair(10, round(entity.start.xMm));
+      pair(20, round(entity.start.yMm));
+      pair(11, round(entity.end.xMm));
+      pair(21, round(entity.end.yMm));
+      return;
+    }
+
     if (entity.type === "polyline") {
       pair(0, "LWPOLYLINE");
       pair(100, "AcDbEntity");
