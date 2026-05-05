@@ -111,6 +111,8 @@ Evidence model — основа для будущей проверяемости
 
 Важное правило: агент не должен возвращать просто "разрешено" или "запрещено". Он должен возвращать структурированное требование, применимость, citation и статус доверия.
 
+Текущий pilot dataset для типовой отдельно стоящей блочно-модульной котельной лежит в `data/evidence/typical-standalone-boiler-room`. Он связывает существующие mock equipment definitions (`boiler-250kw`, `supply-header`, `return-header`) с кандидатами источников. Все эти данные имеют статус `review_required` и не являются подтвержденной нормативной базой.
+
 ## StandardsProfile
 
 `StandardsProfile` собирает набор правил. Текущий `DemoInternalStandardsProfile` содержит placeholder/demo values и не должен восприниматься как реальный профиль стандартов.

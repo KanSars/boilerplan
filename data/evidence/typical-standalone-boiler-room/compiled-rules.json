@@ -1,0 +1,37 @@
+[
+  {
+    "id": "rule-standalone-block-applicability-manual-review",
+    "requirementId": "req-standalone-block-boiler-room-applicability",
+    "kind": "manual_review",
+    "status": "review_required",
+    "severity": "warning",
+    "parameters": {
+      "expectedBoilerRoomType": "standalone_block"
+    },
+    "description": "Проверить, что проект явно размечен как отдельно стоящий блок котельной перед применением пилотного набора требований."
+  },
+  {
+    "id": "rule-boiler-250-source-document-required",
+    "requirementId": "req-typical-boiler-source-document-required",
+    "kind": "required_presence",
+    "status": "review_required",
+    "severity": "warning",
+    "parameters": {
+      "targetKind": "equipment_definition",
+      "metadataField": "sourceDocumentId"
+    },
+    "description": "Карточка типового котла 250 кВт должна иметь ссылку на источник производителя."
+  },
+  {
+    "id": "rule-header-source-document-required",
+    "requirementId": "req-typical-collector-source-document-required",
+    "kind": "required_presence",
+    "status": "review_required",
+    "severity": "warning",
+    "parameters": {
+      "targetKind": "equipment_definition",
+      "metadataField": "sourceDocumentId"
+    },
+    "description": "Карточка коллектора должна иметь ссылку на источник производителя."
+  }
+]

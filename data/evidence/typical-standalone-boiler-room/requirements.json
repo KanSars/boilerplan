@@ -1,0 +1,124 @@
+[
+  {
+    "id": "req-standalone-block-boiler-room-applicability",
+    "title": "Отдельно стоящий блок котельной должен явно фиксироваться как сценарий применимости",
+    "text": "Для пилотного проекта выбран сценарий: отдельно стоящая блочно-модульная котельная. Все будущие правила должны проверять применимость к этому сценарию перед оценкой проекта.",
+    "category": "documentation",
+    "status": "review_required",
+    "extractionMethod": "manual",
+    "confidence": 0.4,
+    "citations": [
+      {
+        "id": "cit-sp89-block-modular-definition",
+        "sourceDocumentId": "src-sp-89-13330-2016",
+        "section": "Термины и определения",
+        "clause": "3.2",
+        "locationNote": "Публичные справочные страницы приводят определение блочно-модульной котельной / отдельно стоящей котельной.",
+        "quote": "Блочно-модульная котельная описывается как котельная полной заводской готовности, размещаемая в здании модульного типа."
+      }
+    ],
+    "applicability": [
+      {
+        "id": "app-project-standalone-block",
+        "subject": "project",
+        "fieldPath": "metadata.boilerRoomType",
+        "operator": "equals",
+        "value": "standalone_block",
+        "description": "Применяется только к пилотному сценарию отдельно стоящей блочно-модульной котельной."
+      }
+    ],
+    "notes": "Это требование фиксирует сценарий пилота, а не разрешает проектирование без полного анализа нормативов."
+  },
+  {
+    "id": "req-typical-boiler-source-document-required",
+    "title": "Для типового котла 250 кВт нужен паспорт или документация производителя",
+    "text": "Карточка типового котла 250 кВт должна иметь источник данных производителя: паспорт, datasheet или страницу документации, из которой извлекаются габариты, подключения и ограничения.",
+    "category": "documentation",
+    "status": "review_required",
+    "extractionMethod": "manual",
+    "confidence": 0.45,
+    "citations": [
+      {
+        "id": "cit-rgt-250-passport-technical-table",
+        "sourceDocumentId": "src-rgt-250-500-passport",
+        "section": "Технические характеристики",
+        "locationNote": "Публичный PDF-паспорт содержит таблицу параметров для моделей RGT-250 / КСВа-250 и смежных моделей.",
+        "quote": "Таблица паспорта перечисляет номинальную тепловую производительность, расход газа, рабочее давление воды и присоединительные размеры."
+      },
+      {
+        "id": "cit-duotherm-250-docs-page",
+        "sourceDocumentId": "src-duotherm-250-public-docs",
+        "locationNote": "Публичная страница документации содержит PDF материалы для котла Duotherm 250.",
+        "quote": "Страница документации перечисляет PDF материалы: сводную таблицу, чертеж общего вида, конструкцию котла, каталог и сертификаты."
+      }
+    ],
+    "applicability": [
+      {
+        "id": "app-equipment-definition-boiler-250",
+        "subject": "equipment_definition",
+        "fieldPath": "id",
+        "operator": "equals",
+        "value": "boiler-250kw",
+        "description": "Применяется к карточкам типового водогрейного котла 250 кВт."
+      }
+    ],
+    "notes": "Пока требование проверяет наличие источника, а не корректность конкретных размеров."
+  },
+  {
+    "id": "req-typical-collector-source-document-required",
+    "title": "Для коллектора нужен паспорт или спецификация производителя",
+    "text": "Карточка коллектора должна ссылаться на источник данных производителя, где можно проверить назначение, материал, присоединения и ограничения применения.",
+    "category": "documentation",
+    "status": "review_required",
+    "extractionMethod": "manual",
+    "confidence": 0.35,
+    "citations": [
+      {
+        "id": "cit-sanext-steel-manifold-passport",
+        "sourceDocumentId": "src-sanext-steel-manifold-passport",
+        "section": "Назначение и область применения",
+        "locationNote": "Публичный PDF-паспорт коллектора содержит раздел назначения и области применения.",
+        "quote": "Паспорт описывает назначение и область применения стального коллектора."
+      }
+    ],
+    "applicability": [
+      {
+        "id": "app-equipment-definition-header",
+        "subject": "equipment_definition",
+        "fieldPath": "category",
+        "operator": "equals",
+        "value": "header",
+        "description": "Применяется к карточкам коллекторов подачи и обратки."
+      }
+    ],
+    "notes": "Источник является кандидатом. Для котельной может потребоваться другой тип коллектора и другой паспорт."
+  },
+  {
+    "id": "req-efficiency-calculation-source-separated-from-layout",
+    "title": "Расчеты эффективности отделены от правил компоновки",
+    "text": "Стандарты расчета энергопотребления и эффективности не должны автоматически трактоваться как правила размещения оборудования на плане.",
+    "category": "documentation",
+    "status": "review_required",
+    "extractionMethod": "manual",
+    "confidence": 0.4,
+    "citations": [
+      {
+        "id": "cit-gost-r-56777-efficiency-scope",
+        "sourceDocumentId": "src-gost-r-56777-2015",
+        "section": "Область применения",
+        "locationNote": "Публичная карточка Росстандарта описывает метод расчета энергопотребления и КПД котельных установок.",
+        "quote": "Стандарт устанавливает методы расчета потребления энергоресурсов и определения КПД котельных установок."
+      }
+    ],
+    "applicability": [
+      {
+        "id": "app-project-efficiency-not-layout",
+        "subject": "project",
+        "fieldPath": "metadata.requiresEnergyEfficiencyCalculation",
+        "operator": "exists",
+        "description": "Применяется как разделение будущих расчетных и компоновочных проверок."
+      }
+    ],
+    "notes": "Это защитное правило архитектуры: не смешивать расчет эффективности с layout validation."
+  }
+]

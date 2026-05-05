@@ -1,0 +1,62 @@
+[
+  {
+    "id": "src-sp-89-13330-2016",
+    "kind": "sp",
+    "title": "СП 89.13330.2016 Котельные установки",
+    "version": "ред. 2021 / public reference",
+    "publisher": "Минстрой России / публичные правовые и нормативные источники",
+    "language": "ru",
+    "sourceUri": "https://base.garant.ru/71701880/",
+    "retrievedAtIso": "2026-05-04T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Публичная справочная страница. Требуется сверка с официально приобретенным/актуальным текстом и применимостью к конкретному проекту."
+  },
+  {
+    "id": "src-gost-r-56777-2015",
+    "kind": "gost",
+    "title": "ГОСТ Р 56777-2015 Котельные установки. Метод расчета энергопотребления и эффективности",
+    "version": "2015",
+    "publisher": "Росстандарт",
+    "language": "ru",
+    "sourceUri": "https://protect.gost.ru/gost/details/000e9017-6281-4521-8b9a-8e49da881338",
+    "retrievedAtIso": "2026-05-04T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Источник фиксирует существование стандарта и область расчетов эффективности. Не используется как правило размещения оборудования."
+  },
+  {
+    "id": "src-rgt-250-500-passport",
+    "kind": "manufacturer_manual",
+    "title": "Паспорт котлов RGT-250 / КСВа-250 и смежных моделей",
+    "version": "public PDF",
+    "publisher": "zavod-kotel.ru",
+    "language": "ru",
+    "sourceUri": "https://zavod-kotel.ru/passport/pasport-rgt-250-500.pdf?_rsc=1x2f8",
+    "retrievedAtIso": "2026-05-04T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Публичный PDF-паспорт типового газового водогрейного котла 250-500 кВт. Требуется проверка актуальности и соответствия выбранной модели."
+  },
+  {
+    "id": "src-duotherm-250-public-docs",
+    "kind": "manufacturer_manual",
+    "title": "Документация для котла Duotherm 250",
+    "version": "public docs page",
+    "publisher": "Polykraft",
+    "language": "ru",
+    "sourceUri": "https://polykraft.ru/docs/duotherm-250",
+    "retrievedAtIso": "2026-05-04T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Публичная страница документации с PDF материалами. Используется как кандидат источника для будущей загрузки паспортов и чертежей."
+  },
+  {
+    "id": "src-sanext-steel-manifold-passport",
+    "kind": "manufacturer_manual",
+    "title": "Паспорт стального коллектора SANEXT",
+    "version": "public PDF",
+    "publisher": "SANEXT / stoking library",
+    "language": "ru",
+    "sourceUri": "https://image.stoking.ru/uploads/image/stoking-library/sanext/bez-serii/8113/pas.pdf",
+    "retrievedAtIso": "2026-05-04T00:00:00.000Z",
+    "status": "review_required",
+    "notes": "Публичный PDF-паспорт коллектора. Требуется проверить применимость к коллектору котельной, а не квартирному узлу."
+  }
+]

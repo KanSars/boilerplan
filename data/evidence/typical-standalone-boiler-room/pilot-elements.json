@@ -1,0 +1,67 @@
+{
+  "id": "typical-standalone-boiler-room",
+  "title": "Типовая отдельно стоящая блочно-модульная котельная",
+  "status": "review_required",
+  "notes": "Описывает пилотные сущности для evidence pipeline. Не является проектным решением.",
+  "roomElements": [
+    {
+      "id": "room-main-block",
+      "kind": "room",
+      "label": "Блок котельной",
+      "metadata": {
+        "boilerRoomType": "standalone_block"
+      }
+    },
+    {
+      "id": "door-main-entry",
+      "kind": "architectural_opening",
+      "label": "Основная дверь",
+      "metadata": {
+        "futureDomainType": "ArchitecturalOpening",
+        "openingType": "door"
+      }
+    },
+    {
+      "id": "utility-water-supply-entry",
+      "kind": "utility_entry_point",
+      "label": "Ввод воды",
+      "metadata": {
+        "futureDomainType": "UtilityEntryPoint",
+        "systemType": "water_supply"
+      }
+    },
+    {
+      "id": "utility-water-return-exit",
+      "kind": "utility_entry_point",
+      "label": "Выход обратной воды",
+      "metadata": {
+        "futureDomainType": "UtilityEntryPoint",
+        "systemType": "water_return"
+      }
+    },
+    {
+      "id": "utility-gas-entry",
+      "kind": "utility_entry_point",
+      "label": "Ввод газа",
+      "metadata": {
+        "futureDomainType": "UtilityEntryPoint",
+        "systemType": "gas"
+      }
+    },
+    {
+      "id": "utility-electrical-entry",
+      "kind": "utility_entry_point",
+      "label": "Ввод электропитания",
+      "metadata": {
+        "futureDomainType": "UtilityEntryPoint",
+        "systemType": "electrical"
+      }
+    }
+  ],
+  "equipmentDefinitionIds": [
+    "boiler-250kw",
+    "boiler-500kw",
+    "supply-header",
+    "return-header"
+  ]
+}
