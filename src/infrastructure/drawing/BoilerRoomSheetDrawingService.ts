@@ -1,4 +1,5 @@
 import type { EngineeringDrawing, DrawingEntity, DrawingLayer, DrawingViewport } from "@/domain/drawing";
+import type { ConnectionPoint, ConnectionPointType } from "@/domain/equipment/ConnectionPoint";
 import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
 import { getEquipmentBodyRect } from "@/domain/geometry/rectangles";
 import { getWorldConnectionPointsForInstance } from "@/domain/geometry/transforms";
@@ -156,41 +157,65 @@ export class BoilerRoomSheetDrawingService {
     this.addHeaderSymbol(localEntities, supply.x, supply.y, supply.width, supply.height, "КП1 Коллектор подачи", "PIPE_SUPPLY");
     this.addHeaderSymbol(localEntities, ret.x, ret.y, ret.width, ret.height, "КО1 Коллектор обратки", "PIPE_RETURN");
 
-    const supplyDn = getConnectionDn(boilerDefinition, "supply") ?? 32;
-    const returnDn = getConnectionDn(boilerDefinition, "return") ?? 32;
-    const gasDn = getConnectionDn(boilerDefinition, "gas") ?? 25;
-    const flueDn = getConnectionDn(boilerDefinition, "flue") ?? 200;
+    const boilerFacts = getEquipmentFacts(boilerDefinition);
+    const supplyPoint = getConnectionPoint(boilerDefinition, "supply");
+    const returnPoint = getConnectionPoint(boilerDefinition, "return");
+    const gasPoint = getConnectionPoint(boilerDefinition, "gas");
+    const fluePoint = getConnectionPoint(boilerDefinition, "flue");
+    const supplyHeaderDefinition = getDefinitionByInstanceId(project, equipmentDefinitions, supplyHeaderId);
+    const returnHeaderDefinition = getDefinitionByInstanceId(project, equipmentDefinitions, returnHeaderId);
+    const supplyHeaderPoint = getConnectionPoint(supplyHeaderDefinition, "supply");
+    const returnHeaderPoint = getConnectionPoint(returnHeaderDefinition, "return");
+    const supplyDn = supplyPoint?.nominalDiameterMm ?? 32;
+    const returnDn = returnPoint?.nominalDiameterMm ?? 32;
+    const gasDn = gasPoint?.nominalDiameterMm ?? 25;
+    const flueDn = fluePoint?.nominalDiameterMm ?? boilerFacts.flueDiameterMm ?? 200;
+    const boilerSupplyPort = getBoxPort(boilerBox, boilerDefinition, supplyPoint, "right");
+    const boilerReturnPort = getBoxPort(boilerBox, boilerDefinition, returnPoint, "right");
+    const boilerGasPort = getBoxPort(boilerBox, boilerDefinition, gasPoint, "bottom");
+    const boilerFluePort = getBoxPort(boilerBox, boilerDefinition, fluePoint, "top");
+    const supplyHeaderPort = getBoxPort(supply, supplyHeaderDefinition, supplyHeaderPoint, "left");
+    const returnHeaderPort = getBoxPort(ret, returnHeaderDefinition, returnHeaderPoint, "left");
 
     this.addPipeRun(localEntities, [
-      { x: boilerBox.x + boilerBox.width, y: boilerBox.y + 12 },
-      { x: supply.x - 18, y: boilerBox.y + 12 },
-      { x: supply.x - 18, y: supply.y + supply.height / 2 },
-      { x: supply.x, y: supply.y + supply.height / 2 },
+      boilerSupplyPort,
+      { x: supply.x - 18, y: boilerSupplyPort.y },
+      { x: supply.x - 18, y: supplyHeaderPort.y },
+      supplyHeaderPort,
     ], "PIPE_SUPPLY", `T1 DN${supplyDn}`);
 
     this.addPipeRun(localEntities, [
-      { x: boilerBox.x + boilerBox.width, y: boilerBox.y + 34 },
-      { x: ret.x - 25, y: boilerBox.y + 34 },
-      { x: ret.x - 25, y: ret.y + ret.height / 2 },
-      { x: ret.x, y: ret.y + ret.height / 2 },
+      boilerReturnPort,
+      { x: ret.x - 25, y: boilerReturnPort.y },
+      { x: ret.x - 25, y: returnHeaderPort.y },
+      returnHeaderPort,
     ], "PIPE_RETURN", `T2 DN${returnDn}`);
 
     this.addPipeRun(localEntities, [
-      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y + boilerBox.height },
-      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y + boilerBox.height + 24 },
+      boilerGasPort,
+      { x: boilerGasPort.x, y: boilerBox.y + boilerBox.height + 24 },
       { x: boilerBox.x - 30, y: boilerBox.y + boilerBox.height + 24 },
     ], "PIPE_GAS", `Г DN${gasDn}`);
 
     this.addPipeRun(localEntities, [
-      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y },
-      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y - 26 },
+      boilerFluePort,
+      { x: boilerFluePort.x, y: boilerBox.y - 26 },
     ], "PIPE_FLUE", `Дымоход DN${flueDn}`);
+
+    this.addConnectionPortMarker(localEntities, boilerSupplyPort, supplyPoint, "PIPE_SUPPLY");
+    this.addConnectionPortMarker(localEntities, boilerReturnPort, returnPoint, "PIPE_RETURN");
+    this.addConnectionPortMarker(localEntities, boilerGasPort, gasPoint, "PIPE_GAS");
+    this.addConnectionPortMarker(localEntities, boilerFluePort, fluePoint, "PIPE_FLUE");
+    this.addConnectionPortMarker(localEntities, supplyHeaderPort, supplyHeaderPoint, "PIPE_SUPPLY");
+    this.addConnectionPortMarker(localEntities, returnHeaderPort, returnHeaderPoint, "PIPE_RETURN");
 
     localEntities.push(
       text(boilerBox.x - 33, boilerBox.y + boilerBox.height + 27, "Ввод газа", 2.6, "ANNOTATION"),
       text(boilerBox.x + boilerBox.width / 2 + 5, boilerBox.y - 22, "Дымовые газы", 2.6, "ANNOTATION"),
       text(supply.x + supply.width, supply.y + 17, "к системе", 2.4, "ANNOTATION", "normal", "end"),
       text(ret.x + ret.width, ret.y + 17, "от системы", 2.4, "ANNOTATION", "normal", "end"),
+      text(x0, 138, getPassportSummary(boilerDefinition), 2.6, "ANNOTATION"),
+      text(x0, 144, getSourceSummary(boilerDefinition), 2.6, "WARNING"),
       text(x0, 165, "Котел работает с принудительной циркуляцией. Запуск без циркуляции запрещен по паспорту RGT.", 2.6, "WARNING"),
       text(x0, 171, "DN и габариты для RGT-100/КСВА-100 взяты из публичного паспорта; координаты портов условные.", 2.6, "WARNING"),
     );
@@ -253,6 +278,19 @@ export class BoilerRoomSheetDrawingService {
       circle(x + 8, y + height / 2, 2.2, "PORT_MARK", "#ffffff"),
       circle(x + width - 8, y + height / 2, 2.2, "PORT_MARK", "#ffffff"),
       text(x + width / 2, y - 3, label, 2.6, "ANNOTATION", "bold", "middle"),
+    );
+  }
+
+  private addConnectionPortMarker(
+    entities: DrawingEntity[],
+    point: Point,
+    connectionPoint: ConnectionPoint | undefined,
+    layer: "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS" | "PIPE_FLUE",
+  ) {
+    const dn = connectionPoint?.nominalDiameterMm ? `DN${connectionPoint.nominalDiameterMm}` : "DN?";
+    entities.push(
+      circle(point.x, point.y, 1.8, "PORT_MARK", "#ffffff"),
+      text(point.x + 3, point.y + 1.1, dn, 1.9, layer, "bold"),
     );
   }
 
@@ -347,8 +385,91 @@ const text = (
 const pipeLayer = (systemType: PipingSystemType): "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS" =>
   systemType === "return" ? "PIPE_RETURN" : systemType === "gas" ? "PIPE_GAS" : "PIPE_SUPPLY";
 
-const getConnectionDn = (definition: EquipmentDefinition | undefined, type: "supply" | "return" | "gas" | "flue"): number | undefined =>
-  definition?.connectionPoints.find((point) => point.type === type)?.nominalDiameterMm;
+const getConnectionPoint = (
+  definition: EquipmentDefinition | undefined,
+  type: ConnectionPointType,
+): ConnectionPoint | undefined =>
+  definition?.connectionPoints.find((point) => point.type === type);
+
+const getDefinitionByInstanceId = (
+  project: Project,
+  equipmentDefinitions: EquipmentDefinition[],
+  instanceId: string | undefined,
+): EquipmentDefinition | undefined => {
+  const instance = project.equipmentInstances.find((item) => item.id === instanceId);
+  return instance ? equipmentDefinitions.find((definition) => definition.id === instance.definitionId) : undefined;
+};
+
+type EquipmentFacts = {
+  nominalPowerKw?: number;
+  fuelType?: string;
+  gasPressureKpaMax?: number;
+  flueDiameterMm?: number;
+};
+
+const getEquipmentFacts = (definition: EquipmentDefinition | undefined): EquipmentFacts => {
+  const facts = definition?.metadata?.extractedFacts;
+  return typeof facts === "object" && facts !== null ? facts as EquipmentFacts : {};
+};
+
+const getPassportSummary = (definition: EquipmentDefinition | undefined): string => {
+  const facts = getEquipmentFacts(definition);
+  const parts = [
+    facts.nominalPowerKw ? `N=${facts.nominalPowerKw} кВт` : undefined,
+    facts.fuelType === "natural_gas" ? "топливо: природный газ" : undefined,
+    facts.gasPressureKpaMax ? `p газа до ${facts.gasPressureKpaMax} кПа` : undefined,
+  ].filter(Boolean);
+  return parts.length > 0 ? `Паспортные данные: ${parts.join("; ")}` : "Паспортные данные: требуется заполнение";
+};
+
+const getSourceSummary = (definition: EquipmentDefinition | undefined): string => {
+  const sourceDocumentId = typeof definition?.metadata?.sourceDocumentId === "string"
+    ? definition.metadata.sourceDocumentId
+    : "нет источника";
+  const status = typeof definition?.metadata?.reviewStatus === "string"
+    ? definition.metadata.reviewStatus
+    : "review_required";
+  return `Источник: ${sourceDocumentId}; статус: ${status}`;
+};
+
+type Box = { x: number; y: number; width: number; height: number };
+
+const getBoxPort = (
+  box: Box,
+  definition: EquipmentDefinition | undefined,
+  connectionPoint: ConnectionPoint | undefined,
+  fallbackSide: "left" | "right" | "top" | "bottom",
+): Point => {
+  if (!definition || !connectionPoint) return getSidePort(box, fallbackSide);
+  const xRatio = clamp(connectionPoint.position.xMm / Math.max(1, definition.dimensionsMm.width), 0, 1);
+  const yRatio = clamp(connectionPoint.position.yMm / Math.max(1, definition.dimensionsMm.depth), 0, 1);
+  const side = getPortSide(connectionPoint, fallbackSide);
+  if (side === "left") return { x: box.x, y: box.y + box.height * yRatio };
+  if (side === "right") return { x: box.x + box.width, y: box.y + box.height * yRatio };
+  if (side === "top") return { x: box.x + box.width * xRatio, y: box.y };
+  return { x: box.x + box.width * xRatio, y: box.y + box.height };
+};
+
+const getPortSide = (
+  connectionPoint: ConnectionPoint,
+  fallbackSide: "left" | "right" | "top" | "bottom",
+): "left" | "right" | "top" | "bottom" => {
+  if (connectionPoint.direction === "left") return "left";
+  if (connectionPoint.direction === "right") return "right";
+  if (connectionPoint.direction === "bottom" || connectionPoint.direction === "front" || connectionPoint.direction === "back") return "bottom";
+  if (connectionPoint.direction === "top" || connectionPoint.direction === "up" || connectionPoint.direction === "down") return "top";
+  return fallbackSide;
+};
+
+const getSidePort = (box: Box, side: "left" | "right" | "top" | "bottom"): Point => {
+  if (side === "left") return { x: box.x, y: box.y + box.height / 2 };
+  if (side === "right") return { x: box.x + box.width, y: box.y + box.height / 2 };
+  if (side === "top") return { x: box.x + box.width / 2, y: box.y };
+  return { x: box.x + box.width / 2, y: box.y + box.height };
+};
+
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
 
 const getPlanLabel = (label: string, category: string): string => {
   if (category !== "header") return label.length > 8 ? label.slice(0, 8) : label;
