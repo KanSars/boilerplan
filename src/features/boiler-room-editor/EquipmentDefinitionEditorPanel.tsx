@@ -335,6 +335,7 @@ const translateSource = (source: ConnectionPointSource): string => {
   const labels: Record<ConnectionPointSource, string> = {
     mock: "Тестовые данные",
     manual_catalog: "Ручной каталог",
+    manufacturer_catalog: "Каталог производителя",
     ai_extracted_pdf: "Извлечено из PDF ИИ",
     bim_import: "Импорт BIM",
     user_override: "Пользовательская правка",

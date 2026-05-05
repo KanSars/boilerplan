@@ -1,0 +1,337 @@
+import type { EngineeringDrawing, DrawingEntity, DrawingLayer } from "@/domain/drawing";
+import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
+import { getEquipmentBodyRect } from "@/domain/geometry/rectangles";
+import { getWorldConnectionPointsForInstance } from "@/domain/geometry/transforms";
+import type { PipingSystemType } from "@/domain/piping/PipingRoute";
+import type { Project } from "@/domain/project/Project";
+
+const sheetWidth = 420;
+const sheetHeight = 297;
+
+const layers: DrawingLayer[] = [
+  { name: "SHEET_FRAME", stroke: "#111827", fill: "none", strokeWidth: 0.35 },
+  { name: "TITLE_BLOCK", stroke: "#111827", fill: "none", strokeWidth: 0.25 },
+  { name: "ROOM_OUTLINE", stroke: "#111827", fill: "#ffffff", strokeWidth: 0.25 },
+  { name: "EQUIPMENT_SYMBOL", stroke: "#111827", fill: "#f8fafc", strokeWidth: 0.3 },
+  { name: "PIPE_SUPPLY", stroke: "#b91c1c", fill: "none", strokeWidth: 0.45 },
+  { name: "PIPE_RETURN", stroke: "#1d4ed8", fill: "none", strokeWidth: 0.45, lineType: "dashed" },
+  { name: "PIPE_GAS", stroke: "#92400e", fill: "none", strokeWidth: 0.45, lineType: "dashdot" },
+  { name: "PIPE_FLUE", stroke: "#374151", fill: "none", strokeWidth: 0.45 },
+  { name: "VALVE_SYMBOL", stroke: "#111827", fill: "#ffffff", strokeWidth: 0.3 },
+  { name: "PORT_MARK", stroke: "#111827", fill: "#ffffff", strokeWidth: 0.25 },
+  { name: "ANNOTATION", stroke: "#111827", fill: "#111827", strokeWidth: 0.2 },
+  { name: "WARNING", stroke: "#b45309", fill: "#b45309", strokeWidth: 0.2 },
+];
+
+export class BoilerRoomSheetDrawingService {
+  create(project: Project, equipmentDefinitions: EquipmentDefinition[]): EngineeringDrawing {
+    const entities: DrawingEntity[] = [];
+    const boiler = project.equipmentInstances.find((instance) =>
+      equipmentDefinitions.find((definition) => definition.id === instance.definitionId)?.category === "boiler",
+    );
+    const supplyHeader = project.equipmentInstances.find((instance) => instance.definitionId === "supply-header");
+    const returnHeader = project.equipmentInstances.find((instance) => instance.definitionId === "return-header");
+
+    this.addSheet(entities, project.name);
+    this.addPlanView(entities, project, equipmentDefinitions);
+    this.addProcessDiagram(entities, project, equipmentDefinitions, boiler?.id, supplyHeader?.id, returnHeader?.id);
+    this.addLegend(entities);
+
+    return {
+      id: `${project.id}_pilot_sheet`,
+      units: "paper_mm",
+      sheet: {
+        format: "A3",
+        orientation: "landscape",
+        width: sheetWidth,
+        height: sheetHeight,
+      },
+      layers,
+      entities,
+      metadata: {
+        title: `${project.name}. Пилотный чертеж котельной`,
+        status: "review_required",
+        sourceDocumentIds: [
+          "src-rgt-100-500-passport",
+          "src-sp-89-13330-2016",
+          "src-gost-21-704-2011",
+          "src-gost-2-785-70",
+        ],
+        notes: [
+          "Предварительный лист: требуется инженерная проверка источников, применимости и координат патрубков.",
+          "Котел RGT-100/КСВА-100 принят как пилотная модель по публичному паспорту.",
+        ],
+      },
+    };
+  }
+
+  private addSheet(entities: DrawingEntity[], projectName: string) {
+    entities.push(
+      rect(5, 5, 410, 287, "SHEET_FRAME"),
+      rect(260, 252, 155, 40, "TITLE_BLOCK"),
+      line([{ x: 260, y: 263 }, { x: 415, y: 263 }], "TITLE_BLOCK"),
+      line([{ x: 330, y: 252 }, { x: 330, y: 292 }], "TITLE_BLOCK"),
+      text(12, 14, "Пилотный чертеж отдельно стоящей газовой водогрейной котельной", 4.2, "ANNOTATION", "bold"),
+      text(12, 20, "Исходные данные и нормативная применимость: review_required", 2.8, "WARNING"),
+      text(264, 260, projectName, 3, "ANNOTATION", "bold"),
+      text(334, 260, "Лист A3", 3, "ANNOTATION"),
+      text(264, 272, "Стадия: PILOT", 2.6, "ANNOTATION"),
+      text(334, 272, "Статус: требует проверки", 2.6, "WARNING"),
+      text(264, 286, "Не является рабочей документацией", 2.6, "WARNING"),
+    );
+  }
+
+  private addPlanView(
+    entities: DrawingEntity[],
+    project: Project,
+    equipmentDefinitions: EquipmentDefinition[],
+  ) {
+    const origin = { x: 15, y: 36 };
+    const size = { width: 180, height: 118 };
+    const scale = Math.min(size.width / project.room.widthMm, size.height / project.room.lengthMm);
+
+    entities.push(
+      text(origin.x, origin.y - 6, "План размещения оборудования, М 1:50 (эскиз)", 3.2, "ANNOTATION", "bold"),
+      rect(origin.x, origin.y, project.room.widthMm * scale, project.room.lengthMm * scale, "ROOM_OUTLINE"),
+    );
+
+    for (const instance of project.equipmentInstances) {
+      const definition = equipmentDefinitions.find((item) => item.id === instance.definitionId);
+      if (!definition) continue;
+      const body = getEquipmentBodyRect(instance, definition);
+      const x = origin.x + body.xMm * scale;
+      const y = origin.y + body.yMm * scale;
+      const width = Math.max(body.widthMm * scale, 5);
+      const height = Math.max(body.depthMm * scale, 4);
+      entities.push(rect(x, y, width, height, "EQUIPMENT_SYMBOL", "#f8fafc"));
+      this.addEquipmentGlyph(entities, definition.category, x, y, width, height);
+      entities.push(text(x + width / 2, y + height / 2 + 1.2, instance.label, 2.5, "ANNOTATION", "bold", "middle"));
+
+      for (const point of getWorldConnectionPointsForInstance(instance, definition)) {
+        entities.push(circle(origin.x + point.worldPosition.xMm * scale, origin.y + point.worldPosition.yMm * scale, 1.2, "PORT_MARK"));
+      }
+    }
+
+    for (const route of project.pipingRoutes) {
+      entities.push(line(route.polylinePoints.map((point) => ({
+        x: origin.x + point.xMm * scale,
+        y: origin.y + point.yMm * scale,
+      })), pipeLayer(route.systemType)));
+    }
+  }
+
+  private addProcessDiagram(
+    entities: DrawingEntity[],
+    project: Project,
+    equipmentDefinitions: EquipmentDefinition[],
+    boilerId?: string,
+    supplyHeaderId?: string,
+    returnHeaderId?: string,
+  ) {
+    const x0 = 225;
+    const y0 = 38;
+    entities.push(text(x0, y0 - 8, "Технологическая схема подключений (без масштаба)", 3.2, "ANNOTATION", "bold"));
+
+    const boiler = project.equipmentInstances.find((instance) => instance.id === boilerId);
+    const boilerDefinition = boiler ? equipmentDefinitions.find((definition) => definition.id === boiler.definitionId) : undefined;
+    const boilerTitle = boiler && boilerDefinition
+      ? `${boiler.label}: ${boilerDefinition.manufacturer ?? ""} ${boilerDefinition.model ?? boilerDefinition.name}`
+      : "К1: котел";
+    const boilerBox = { x: x0, y: y0 + 38, width: 58, height: 48 };
+    this.addBoilerSymbol(entities, boilerBox.x, boilerBox.y, boilerBox.width, boilerBox.height, boilerTitle);
+
+    const supply = { x: x0 + 105, y: y0 + 28, width: 88, height: 12 };
+    const ret = { x: x0 + 105, y: y0 + 84, width: 88, height: 12 };
+    this.addHeaderSymbol(entities, supply.x, supply.y, supply.width, supply.height, "КП1 Коллектор подачи", "PIPE_SUPPLY");
+    this.addHeaderSymbol(entities, ret.x, ret.y, ret.width, ret.height, "КО1 Коллектор обратки", "PIPE_RETURN");
+
+    const supplyDn = getConnectionDn(boilerDefinition, "supply") ?? 32;
+    const returnDn = getConnectionDn(boilerDefinition, "return") ?? 32;
+    const gasDn = getConnectionDn(boilerDefinition, "gas") ?? 25;
+    const flueDn = getConnectionDn(boilerDefinition, "flue") ?? 200;
+
+    this.addPipeRun(entities, [
+      { x: boilerBox.x + boilerBox.width, y: boilerBox.y + 12 },
+      { x: supply.x - 18, y: boilerBox.y + 12 },
+      { x: supply.x - 18, y: supply.y + supply.height / 2 },
+      { x: supply.x, y: supply.y + supply.height / 2 },
+    ], "PIPE_SUPPLY", `T1 DN${supplyDn}`);
+
+    this.addPipeRun(entities, [
+      { x: boilerBox.x + boilerBox.width, y: boilerBox.y + 34 },
+      { x: ret.x - 25, y: boilerBox.y + 34 },
+      { x: ret.x - 25, y: ret.y + ret.height / 2 },
+      { x: ret.x, y: ret.y + ret.height / 2 },
+    ], "PIPE_RETURN", `T2 DN${returnDn}`);
+
+    this.addPipeRun(entities, [
+      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y + boilerBox.height },
+      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y + boilerBox.height + 24 },
+      { x: boilerBox.x - 30, y: boilerBox.y + boilerBox.height + 24 },
+    ], "PIPE_GAS", `Г DN${gasDn}`);
+
+    this.addPipeRun(entities, [
+      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y },
+      { x: boilerBox.x + boilerBox.width / 2, y: boilerBox.y - 26 },
+    ], "PIPE_FLUE", `Дымоход DN${flueDn}`);
+
+    entities.push(
+      text(boilerBox.x - 33, boilerBox.y + boilerBox.height + 27, "Ввод газа", 2.6, "ANNOTATION"),
+      text(boilerBox.x + boilerBox.width / 2 + 5, boilerBox.y - 22, "Дымовые газы", 2.6, "ANNOTATION"),
+      text(supply.x + supply.width + 8, supply.y + 7, "К системе отопления", 2.6, "ANNOTATION"),
+      text(ret.x + ret.width + 8, ret.y + 7, "От системы отопления", 2.6, "ANNOTATION"),
+      text(x0, 165, "Котел работает с принудительной циркуляцией. Запуск без циркуляции запрещен по паспорту RGT.", 2.6, "WARNING"),
+      text(x0, 171, "DN и габариты для RGT-100/КСВА-100 взяты из публичного паспорта; координаты портов условные.", 2.6, "WARNING"),
+    );
+
+    if (!supplyHeaderId || !returnHeaderId) {
+      entities.push(text(x0, 178, "Нет размещенных коллекторов подачи/обратки: схема требует проверки.", 2.6, "WARNING"));
+    }
+  }
+
+  private addLegend(entities: DrawingEntity[]) {
+    const x = 15;
+    const y = 180;
+    entities.push(text(x, y, "Условные обозначения", 3.2, "ANNOTATION", "bold"));
+    this.addPipeRun(entities, [{ x, y: y + 9 }, { x: x + 28, y: y + 9 }], "PIPE_SUPPLY", "T1 подача");
+    this.addPipeRun(entities, [{ x, y: y + 20 }, { x: x + 28, y: y + 20 }], "PIPE_RETURN", "T2 обратка");
+    this.addPipeRun(entities, [{ x, y: y + 31 }, { x: x + 28, y: y + 31 }], "PIPE_GAS", "Г газ");
+    this.addValve(entities, x + 70, y + 9, "PIPE_SUPPLY");
+    entities.push(text(x + 78, y + 10, "Запорная арматура", 2.5, "ANNOTATION"));
+  }
+
+  private addEquipmentGlyph(entities: DrawingEntity[], category: string, x: number, y: number, width: number, height: number) {
+    if (category === "boiler") {
+      entities.push(
+        circle(x + width / 2, y + Math.max(2, height * 0.22), Math.min(width, height) * 0.12, "EQUIPMENT_SYMBOL", "#ffffff"),
+        line([{ x: x + width * 0.2, y: y + height * 0.72 }, { x: x + width * 0.8, y: y + height * 0.72 }], "EQUIPMENT_SYMBOL"),
+      );
+      return;
+    }
+    if (category === "header") {
+      entities.push(line([{ x: x + 1, y: y + height / 2 }, { x: x + width - 1, y: y + height / 2 }], "EQUIPMENT_SYMBOL"));
+    }
+  }
+
+  private addBoilerSymbol(entities: DrawingEntity[], x: number, y: number, width: number, height: number, title: string) {
+    entities.push(
+      rect(x, y, width, height, "EQUIPMENT_SYMBOL", "#f8fafc"),
+      text(x + width / 2, y + 6, "К1", 4, "ANNOTATION", "bold", "middle"),
+      circle(x + width / 2, y + 16, 6, "EQUIPMENT_SYMBOL", "#ffffff"),
+      line([{ x: x + 16, y: y + 28 }, { x: x + 42, y: y + 28 }], "EQUIPMENT_SYMBOL"),
+      line([{ x: x + 18, y: y + 34 }, { x: x + 40, y: y + 34 }], "EQUIPMENT_SYMBOL"),
+      text(x + width / 2, y + height + 7, title.trim(), 2.5, "ANNOTATION", "normal", "middle"),
+    );
+  }
+
+  private addHeaderSymbol(
+    entities: DrawingEntity[],
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    label: string,
+    layer: "PIPE_SUPPLY" | "PIPE_RETURN",
+  ) {
+    entities.push(
+      rect(x, y, width, height, "EQUIPMENT_SYMBOL", "#ffffff"),
+      line([{ x: x + 4, y: y + height / 2 }, { x: x + width - 4, y: y + height / 2 }], layer),
+      circle(x + 8, y + height / 2, 2.2, "PORT_MARK", "#ffffff"),
+      circle(x + width - 8, y + height / 2, 2.2, "PORT_MARK", "#ffffff"),
+      text(x + width / 2, y - 3, label, 2.6, "ANNOTATION", "bold", "middle"),
+    );
+  }
+
+  private addPipeRun(
+    entities: DrawingEntity[],
+    points: Point[],
+    layer: "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS" | "PIPE_FLUE",
+    label: string,
+  ) {
+    entities.push(line(points, layer));
+    const mid = points[Math.floor(points.length / 2)];
+    entities.push(text(mid.x + 2, mid.y - 2, label, 2.5, "ANNOTATION", "bold"));
+    this.addFlowArrow(entities, points, layer);
+    if (layer !== "PIPE_FLUE") {
+      this.addValve(entities, mid.x, mid.y, layer);
+    }
+  }
+
+  private addFlowArrow(entities: DrawingEntity[], points: Point[], layer: "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS" | "PIPE_FLUE") {
+    if (points.length < 2) return;
+    const a = points[points.length - 2];
+    const b = points[points.length - 1];
+    const angle = Math.atan2(b.y - a.y, b.x - a.x);
+    const x = (a.x + b.x) / 2;
+    const y = (a.y + b.y) / 2;
+    const size = 3.5;
+    const left = {
+      x: x - Math.cos(angle) * size - Math.sin(angle) * size * 0.5,
+      y: y - Math.sin(angle) * size + Math.cos(angle) * size * 0.5,
+    };
+    const right = {
+      x: x - Math.cos(angle) * size + Math.sin(angle) * size * 0.5,
+      y: y - Math.sin(angle) * size - Math.cos(angle) * size * 0.5,
+    };
+    entities.push({ type: "polyline", layer, points: [{ x, y }, left, right, { x, y }], closed: true });
+  }
+
+  private addValve(entities: DrawingEntity[], x: number, y: number, pipeLayer: "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS") {
+    const size = 4;
+    entities.push(
+      { type: "polyline", layer: "VALVE_SYMBOL", points: [{ x: x - size, y: y - size }, { x, y }, { x: x - size, y: y + size }, { x: x - size, y: y - size }], closed: true },
+      { type: "polyline", layer: "VALVE_SYMBOL", points: [{ x: x + size, y: y - size }, { x, y }, { x: x + size, y: y + size }, { x: x + size, y: y - size }], closed: true },
+      circle(x, y, 0.8, pipeLayer, "#ffffff"),
+    );
+  }
+}
+
+type Point = { x: number; y: number };
+
+const rect = (x: number, y: number, width: number, height: number, layer: DrawingEntity["layer"], fill?: string): DrawingEntity => ({
+  type: "rect",
+  layer,
+  x,
+  y,
+  width,
+  height,
+  fill,
+});
+
+const line = (points: Point[], layer: DrawingEntity["layer"]): DrawingEntity => ({
+  type: "polyline",
+  layer,
+  points,
+});
+
+const circle = (x: number, y: number, radius: number, layer: DrawingEntity["layer"], fill?: string): DrawingEntity => ({
+  type: "circle",
+  layer,
+  center: { x, y },
+  radius,
+  fill,
+});
+
+const text = (
+  x: number,
+  y: number,
+  value: string,
+  height: number,
+  layer: DrawingEntity["layer"],
+  weight: "normal" | "bold" = "normal",
+  align: "start" | "middle" | "end" = "start",
+): DrawingEntity => ({
+  type: "text",
+  layer,
+  at: { x, y },
+  value,
+  height,
+  weight,
+  align,
+});
+
+const pipeLayer = (systemType: PipingSystemType): "PIPE_SUPPLY" | "PIPE_RETURN" | "PIPE_GAS" =>
+  systemType === "return" ? "PIPE_RETURN" : systemType === "gas" ? "PIPE_GAS" : "PIPE_SUPPLY";
+
+const getConnectionDn = (definition: EquipmentDefinition | undefined, type: "supply" | "return" | "gas" | "flue"): number | undefined =>
+  definition?.connectionPoints.find((point) => point.type === type)?.nominalDiameterMm;

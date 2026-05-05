@@ -16,6 +16,8 @@ export const selectSelectedEquipmentDefinitionId = (state: RootState) => state.e
 export const selectViewLayout = (state: RootState) => state.editor.viewLayout;
 export const selectLayoutZoom = (state: RootState) => state.editor.layoutZoom;
 export const selectSchematicZoom = (state: RootState) => state.editor.schematicZoom;
+export const selectSheetZoom = (state: RootState) => state.editor.sheetZoom;
+export const selectRightSidebarCollapsed = (state: RootState) => state.editor.rightSidebarCollapsed;
 export const selectEquipmentDefinitions = (state: RootState) => state.catalog.equipmentDefinitions;
 
 export const selectValidationIssues = createSelector([selectProject, selectEquipmentDefinitions], (project, equipmentDefinitions) =>

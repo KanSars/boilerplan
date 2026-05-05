@@ -4,13 +4,19 @@ export const createInitialProject = (): Project => ({
   id: "project_v0",
   name: "Котельная v0",
   units: "mm",
-  room: { widthMm: 8000, lengthMm: 6000, heightMm: 3000, origin: { xMm: 0, yMm: 0 } },
+  room: { widthMm: 6000, lengthMm: 4500, heightMm: 3000, origin: { xMm: 0, yMm: 0 } },
   equipmentInstances: [
     { id: "inst_supply_header", definitionId: "supply-header", position: { xMm: 900, yMm: 700 }, rotationDeg: 0, label: "Коллектор подачи" },
     { id: "inst_return_header", definitionId: "return-header", position: { xMm: 900, yMm: 1250 }, rotationDeg: 0, label: "Коллектор обратки" },
-    { id: "inst_boiler_1", definitionId: "boiler-250kw", position: { xMm: 1400, yMm: 3300 }, rotationDeg: 0, label: "B-1" },
+    { id: "inst_boiler_1", definitionId: "rgt-100-ksva-100", position: { xMm: 1550, yMm: 2850 }, rotationDeg: 0, label: "К1" },
   ],
   pipingRoutes: [],
   validationIssues: [],
-  metadata: { version: "v0", catalog: "mock" },
+  metadata: {
+    version: "v0",
+    catalog: "pilot_real_sources_review_required",
+    boilerRoomType: "standalone_block",
+    fuelType: "natural_gas",
+    totalHeatPowerKw: 99,
+  },
 });

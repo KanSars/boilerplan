@@ -45,6 +45,10 @@ button {
   min-height: 680px;
 }
 
+.app-shell.right-sidebar-collapsed {
+  grid-template-columns: 320px minmax(420px, 1fr) 44px;
+}
+
 .sidebar {
   background: var(--panel);
   border-right: 1px solid var(--border);
@@ -55,6 +59,52 @@ button {
 .right-sidebar {
   border-left: 1px solid var(--border);
   border-right: 0;
+}
+
+.right-sidebar.collapsed {
+  padding: 8px 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.right-sidebar-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.sidebar-collapse-button,
+.sidebar-rail-button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+}
+
+.sidebar-collapse-button {
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.sidebar-rail-button {
+  width: 30px;
+  min-height: 180px;
+  padding: 8px 4px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  color: #0f766e;
+}
+
+.sidebar-rail-button span:last-child {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 12px;
 }
 
 .workspace {
@@ -70,7 +120,7 @@ button {
   min-height: 0;
   flex: 1 1 0;
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
+  grid-template-columns: minmax(300px, 0.8fr) minmax(300px, 0.8fr) minmax(360px, 1.1fr);
   gap: 8px;
   padding: 8px;
 }
@@ -446,6 +496,30 @@ select {
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.sheet-preview-frame {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #d1d5db;
+  padding: 14px;
+}
+
+.sheet-preview-viewport {
+  min-width: 100%;
+  max-width: none;
+}
+
+.sheet-preview-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #ffffff;
+  border: 1px solid #9ca3af;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
 }
 
 .schematic-title {

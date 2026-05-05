@@ -7,6 +7,11 @@ export type CadLayerName =
   | "ME_CONN_POINT"
   | "ME_PIPE_SUPPLY"
   | "ME_PIPE_RETURN"
+  | "ME_PIPE_GAS"
+  | "ME_PIPE_FLUE"
+  | "ME_VALVE"
+  | "SHEET_FRAME"
+  | "TITLE_BLOCK"
   | "AN_TEXT";
 
 export type CadLayer = {

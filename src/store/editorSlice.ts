@@ -7,17 +7,21 @@ type EditorState = {
   viewLayout: "row" | "column";
   layoutZoom: number;
   schematicZoom: number;
+  sheetZoom: number;
+  rightSidebarCollapsed: boolean;
   showClearanceZones: boolean;
   showPhysicalRoutes: boolean;
 };
 
 const initialState: EditorState = {
   selectedEquipmentInstanceId: "inst_boiler_1",
-  selectedEquipmentDefinitionId: "boiler-250kw",
+  selectedEquipmentDefinitionId: "rgt-100-ksva-100",
   activeView: "split",
   viewLayout: "row",
   layoutZoom: 1,
   schematicZoom: 1,
+  sheetZoom: 1,
+  rightSidebarCollapsed: false,
   showClearanceZones: true,
   showPhysicalRoutes: true,
 };
@@ -47,6 +51,12 @@ export const editorSlice = createSlice({
     setSchematicZoom(state, action: PayloadAction<number>) {
       state.schematicZoom = clampZoom(action.payload);
     },
+    setSheetZoom(state, action: PayloadAction<number>) {
+      state.sheetZoom = clampZoom(action.payload);
+    },
+    setRightSidebarCollapsed(state, action: PayloadAction<boolean>) {
+      state.rightSidebarCollapsed = action.payload;
+    },
     setShowClearanceZones(state, action: PayloadAction<boolean>) {
       state.showClearanceZones = action.payload;
     },
@@ -62,6 +72,8 @@ export const {
   selectEquipmentInstance,
   setLayoutZoom,
   setSchematicZoom,
+  setSheetZoom,
+  setRightSidebarCollapsed,
   setActiveView,
   setViewLayout,
   setShowClearanceZones,

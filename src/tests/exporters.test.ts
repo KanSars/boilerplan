@@ -27,7 +27,7 @@ describe("exporters", () => {
     expect(output).toContain("B-1");
   });
 
-  it("returns an AutoCAD 2000 ASCII DXF with CAD layers and entities", () => {
+  it("returns an AutoCAD 2000 ASCII DXF with printable sheet CAD layers and entities", () => {
     const project = makeProject();
     project.equipmentInstances.push(
       { id: "supply-header", definitionId: "supply-header", position: { xMm: 500, yMm: 3000 }, rotationDeg: 0, label: "Коллектор подачи" },
@@ -38,12 +38,13 @@ describe("exporters", () => {
     const output = new DxfProjectExporter().export(project, context);
     expect(output).toContain("$ACADVER");
     expect(output).toContain("AC1015");
-    expect(output).toContain("AR_ROOM_WALL");
+    expect(output).toContain("SHEET_FRAME");
+    expect(output).toContain("TITLE_BLOCK");
     expect(output).toContain("ME_EQ_BODY");
-    expect(output).toContain("ME_EQ_CLEARANCE");
     expect(output).toContain("ME_CONN_POINT");
     expect(output).toContain("ME_PIPE_SUPPLY");
     expect(output).toContain("ME_PIPE_RETURN");
+    expect(output).toContain("ME_VALVE");
     expect(output).toContain("LWPOLYLINE");
     expect(output).toContain("CIRCLE");
     expect(output).toContain("TEXT");
@@ -54,8 +55,8 @@ describe("exporters", () => {
     expect(output).toContain("\r\n");
   });
 
-  it("inverts Y coordinates into CAD orientation in DXF export", () => {
+  it("exports the A3 sheet into CAD orientation in DXF export", () => {
     const output = new DxfProjectExporter().export(makeProject(), context);
-    expect(output).toContain("5000");
+    expect(output).toContain("292");
   });
 });

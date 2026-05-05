@@ -59,8 +59,7 @@
     }
   ],
   "equipmentDefinitionIds": [
-    "boiler-250kw",
-    "boiler-500kw",
+    "rgt-100-ksva-100",
     "supply-header",
     "return-header"
   ]

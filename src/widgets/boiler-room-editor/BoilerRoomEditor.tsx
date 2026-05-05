@@ -10,8 +10,11 @@ import { LayoutSvgEditor } from "@/features/boiler-room-editor/LayoutSvgEditor";
 import { PrincipleSchematicView } from "@/features/boiler-room-editor/PrincipleSchematicView";
 import { PropertiesPanel } from "@/features/boiler-room-editor/PropertiesPanel";
 import { RoomSettingsPanel } from "@/features/boiler-room-editor/RoomSettingsPanel";
+import { SheetDrawingPreview } from "@/features/boiler-room-editor/SheetDrawingPreview";
 import { ValidationPanel } from "@/features/boiler-room-editor/ValidationPanel";
 import { MockAiValidationExplainer } from "@/infrastructure/ai/MockAiValidationExplainer";
+import { BoilerRoomSheetDrawingService } from "@/infrastructure/drawing/BoilerRoomSheetDrawingService";
+import { EngineeringSheetSvgExporter } from "@/infrastructure/exporters/EngineeringSheetSvgExporter";
 import { CsvEquipmentScheduleExporter } from "@/infrastructure/exporters/CsvEquipmentScheduleExporter";
 import { DxfProjectExporter } from "@/infrastructure/exporters/DxfProjectExporter";
 import { JsonProjectExporter } from "@/infrastructure/exporters/JsonProjectExporter";
@@ -26,6 +29,8 @@ import {
   selectEquipmentInstance,
   setLayoutZoom,
   setSchematicZoom,
+  setSheetZoom,
+  setRightSidebarCollapsed,
   setViewLayout,
 } from "@/store/editorSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -42,7 +47,9 @@ import {
   selectEditedEquipmentDefinition,
   selectEquipmentDefinitions,
   selectLayoutZoom,
+  selectRightSidebarCollapsed,
   selectSchematicZoom,
+  selectSheetZoom,
   selectSelectedEquipmentDefinition,
   selectSelectedEquipmentInstance,
   selectSelectedEquipmentInstanceId,
@@ -54,6 +61,8 @@ import {
 const pipeRouter = new SimpleOrthogonalPipeRouter();
 const jsonExporter = new JsonProjectExporter();
 const svgExporter = new SvgProjectExporter();
+const sheetDrawingService = new BoilerRoomSheetDrawingService();
+const sheetSvgExporter = new EngineeringSheetSvgExporter();
 const csvExporter = new CsvEquipmentScheduleExporter();
 const dxfExporter = new DxfProjectExporter();
 const aiExplainer = new MockAiValidationExplainer();
@@ -71,9 +80,15 @@ export function BoilerRoomEditor() {
   const viewLayout = useAppSelector(selectViewLayout);
   const layoutZoom = useAppSelector(selectLayoutZoom);
   const schematicZoom = useAppSelector(selectSchematicZoom);
+  const sheetZoom = useAppSelector(selectSheetZoom);
+  const rightSidebarCollapsed = useAppSelector(selectRightSidebarCollapsed);
   const projectWithValidation = useMemo(() => ({ ...project, validationIssues }), [project, validationIssues]);
   const exportContext = useMemo(() => ({ equipmentDefinitions }), [equipmentDefinitions]);
   const aiExplanation = useMemo(() => aiExplainer.explain(validationIssues), [validationIssues]);
+  const sheetDrawing = useMemo(
+    () => sheetDrawingService.create(projectWithValidation, equipmentDefinitions),
+    [equipmentDefinitions, projectWithValidation],
+  );
 
   const deleteSelectedEquipment = useCallback(() => {
     if (!selectedId) return;
@@ -126,7 +141,7 @@ export function BoilerRoomEditor() {
   };
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${rightSidebarCollapsed ? "right-sidebar-collapsed" : ""}`}>
       <aside className="sidebar left-sidebar">
         <RoomSettingsPanel
           projectName={project.name}
@@ -153,8 +168,9 @@ export function BoilerRoomEditor() {
           onValidate={() => undefined}
           onExportJson={() => downloadTextFile("boiler-room-project.json", jsonExporter.export(projectWithValidation, exportContext), "application/json")}
           onExportSvg={() => downloadTextFile("boiler-room-layout.svg", svgExporter.export(projectWithValidation, exportContext), "image/svg+xml")}
+          onExportSheetSvg={() => downloadTextFile("boiler-room-sheet.svg", sheetSvgExporter.export(sheetDrawing), "image/svg+xml")}
           onExportCsv={() => downloadTextFile("equipment-schedule.csv", csvExporter.export(projectWithValidation, exportContext), "text/csv")}
-          onExportDxf={() => downloadTextFile("boiler-room-layout.dxf", dxfExporter.export(projectWithValidation, exportContext), "application/dxf")}
+          onExportDxf={() => downloadTextFile("boiler-room-sheet.dxf", dxfExporter.export(projectWithValidation, exportContext), "application/dxf")}
         />
         <div className="view-layout-toolbar" aria-label="Расположение инженерных видов">
           <span>Расположение экранов</span>
@@ -205,23 +221,58 @@ export function BoilerRoomEditor() {
               zoom={schematicZoom}
             />
           </section>
+          <section className="engineering-view sheet-engineering-view">
+            <ViewHeader
+              title="Чертёж / Предпросмотр листа"
+              zoom={sheetZoom}
+              onZoomOut={() => dispatch(setSheetZoom(sheetZoom - 0.1))}
+              onZoomIn={() => dispatch(setSheetZoom(sheetZoom + 0.1))}
+            />
+            <SheetDrawingPreview drawing={sheetDrawing} zoom={sheetZoom} />
+          </section>
         </div>
       </section>
 
-      <aside className="sidebar right-sidebar">
-        <PropertiesPanel
-          selectedInstance={selectedInstance}
-          selectedDefinition={selectedDefinition}
-          onUpdateLabel={(label) => selectedId && dispatch(updateEquipmentInstance({ id: selectedId, patch: { label } }))}
-          onRotate={() => {
-            if (!selectedInstance) return;
-            const rotations = [0, 90, 180, 270] as const;
-            const next = rotations[(rotations.indexOf(selectedInstance.rotationDeg) + 1) % rotations.length];
-            dispatch(updateEquipmentInstance({ id: selectedInstance.id, patch: { rotationDeg: next } }));
-          }}
-          onDelete={deleteSelectedEquipment}
-        />
-        <ValidationPanel issues={validationIssues} aiExplanation={aiExplanation} />
+      <aside className={`sidebar right-sidebar ${rightSidebarCollapsed ? "collapsed" : ""}`}>
+        {rightSidebarCollapsed ? (
+          <button
+            className="sidebar-rail-button"
+            type="button"
+            aria-label="Показать панель выбранного объекта"
+            title="Показать панель"
+            onClick={() => dispatch(setRightSidebarCollapsed(false))}
+          >
+            <span>‹</span>
+            <span>Панель</span>
+          </button>
+        ) : (
+          <>
+            <div className="right-sidebar-actions">
+              <button
+                className="sidebar-collapse-button"
+                type="button"
+                onClick={() => dispatch(setRightSidebarCollapsed(true))}
+                aria-label="Свернуть панель выбранного объекта"
+                title="Свернуть панель"
+              >
+                ›
+              </button>
+            </div>
+            <PropertiesPanel
+              selectedInstance={selectedInstance}
+              selectedDefinition={selectedDefinition}
+              onUpdateLabel={(label) => selectedId && dispatch(updateEquipmentInstance({ id: selectedId, patch: { label } }))}
+              onRotate={() => {
+                if (!selectedInstance) return;
+                const rotations = [0, 90, 180, 270] as const;
+                const next = rotations[(rotations.indexOf(selectedInstance.rotationDeg) + 1) % rotations.length];
+                dispatch(updateEquipmentInstance({ id: selectedInstance.id, patch: { rotationDeg: next } }));
+              }}
+              onDelete={deleteSelectedEquipment}
+            />
+            <ValidationPanel issues={validationIssues} aiExplanation={aiExplanation} />
+          </>
+        )}
       </aside>
     </main>
   );

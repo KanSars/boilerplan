@@ -15,13 +15,37 @@
     "id": "evlink-equipment-boiler-250-source",
     "target": {
       "kind": "equipment_definition",
-      "id": "boiler-250kw"
+      "id": "rgt-100-ksva-100"
     },
     "requirementId": "req-typical-boiler-source-document-required",
-    "citationIds": ["cit-rgt-250-passport-technical-table", "cit-duotherm-250-docs-page"],
+    "citationIds": ["cit-rgt-100-passport-technical-table", "cit-duotherm-100-ports-page"],
     "relation": "documents_source",
     "status": "review_required",
     "note": "Фиксирует кандидаты источников для типового котла 250 кВт."
+  },
+  {
+    "id": "evlink-drawing-dn-labels",
+    "target": {
+      "kind": "drawing_element",
+      "id": "pilot-sheet-pipes"
+    },
+    "requirementId": "req-drawing-dn-labels-required",
+    "citationIds": ["cit-gost-21-704-dn-label"],
+    "relation": "requires_review",
+    "status": "review_required",
+    "note": "Связывает подписи DN на пилотном листе с источником-кандидатом."
+  },
+  {
+    "id": "evlink-drawing-valve-symbols",
+    "target": {
+      "kind": "drawing_element",
+      "id": "pilot-sheet-valves"
+    },
+    "requirementId": "req-valve-symbol-source-required",
+    "citationIds": ["cit-gost-2-785-valve-symbols"],
+    "relation": "requires_review",
+    "status": "review_required",
+    "note": "Связывает упрощенные символы арматуры с источником-кандидатом."
   },
   {
     "id": "evlink-equipment-supply-header-source",

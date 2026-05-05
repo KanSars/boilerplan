@@ -23,6 +23,7 @@ export type ConnectionPointSystemRole = "source" | "target" | "bidirectional" | 
 export type ConnectionPointSource =
   | "mock"
   | "manual_catalog"
+  | "manufacturer_catalog"
   | "ai_extracted_pdf"
   | "bim_import"
   | "user_override";
