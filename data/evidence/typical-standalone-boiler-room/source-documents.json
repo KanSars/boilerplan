@@ -3,13 +3,13 @@
     "id": "src-sp-89-13330-2016",
     "kind": "sp",
     "title": "СП 89.13330.2016 Котельные установки",
-    "version": "ред. 2021 / public reference",
-    "publisher": "Минстрой России / публичные правовые и нормативные источники",
+    "version": "ред. с Изменением N 1 / public reference",
+    "publisher": "Минстрой России / docs.cntd.ru",
     "language": "ru",
-    "sourceUri": "https://base.garant.ru/71701880/",
-    "retrievedAtIso": "2026-05-04T00:00:00.000Z",
+    "sourceUri": "https://docs.cntd.ru/document/456054199",
+    "retrievedAtIso": "2026-05-05T00:00:00.000Z",
     "status": "review_required",
-    "notes": "Публичная справочная страница. Требуется сверка с официально приобретенным/актуальным текстом и применимостью к конкретному проекту."
+    "notes": "Публичный справочный текст на docs.cntd.ru. Используется для фиксации области применения и общих требований к выбору оборудования; требуется сверка с актуальной редакцией и применимостью к конкретному проекту."
   },
   {
     "id": "src-gost-r-56777-2015",
@@ -39,10 +39,10 @@
     "id": "src-gost-21-704-2011",
     "kind": "gost",
     "title": "ГОСТ 21.704-2011. Правила выполнения рабочей документации наружных сетей водоснабжения и канализации",
-    "version": "ред. 2016 / public reference",
-    "publisher": "Росстандарт / публичная справочная публикация",
+    "version": "с Изменением N 1 / public reference",
+    "publisher": "Росстандарт / docs.cntd.ru",
     "language": "ru",
-    "sourceUri": "https://normativ.kontur.ru/document?documentId=349357&moduleId=9",
+    "sourceUri": "https://docs.cntd.ru/document/1200095705",
     "retrievedAtIso": "2026-05-05T00:00:00.000Z",
     "status": "review_required",
     "notes": "Используется как публичная опора для правила подписи DN на схемах; применимость к внутренним схемам котельной требует проверки."
@@ -51,13 +51,13 @@
     "id": "src-gost-2-785-70",
     "kind": "gost",
     "title": "ГОСТ 2.785-70. Обозначения условные графические. Арматура трубопроводная",
-    "version": "public PDF reference",
-    "publisher": "ЕСКД / публичная PDF-публикация",
+    "version": "public reference",
+    "publisher": "ЕСКД / docs.cntd.ru",
     "language": "ru",
-    "sourceUri": "https://www.tpsystem.ru/showfile/1421/",
+    "sourceUri": "https://docs.cntd.ru/document/1200003851",
     "retrievedAtIso": "2026-05-05T00:00:00.000Z",
     "status": "review_required",
-    "notes": "Источник-кандидат для символов трубопроводной арматуры; требуется сверка с актуальной редакцией и областью применения."
+    "notes": "Справочная публикация на docs.cntd.ru для идентификации стандарта условных обозначений арматуры; требуется сверка с актуальной редакцией и областью применения."
   },
   {
     "id": "src-duotherm-100-public-docs",
@@ -87,13 +87,13 @@
     "id": "src-stout-steel-manifold-dn32",
     "kind": "manufacturer_manual",
     "title": "STOUT стальной распределительный коллектор DN32 SDG-0016-005002",
-    "version": "public product page / passport link",
-    "publisher": "STOUT / Tavago",
+    "version": "technical passport 30.03.2023",
+    "publisher": "STOUT",
     "language": "ru",
-    "sourceUri": "https://tavago.ru/armatura-dlya-obvyazki-truboprovodov/kollektory/stout/stout-stalnoy-raspredelitelnyy-kollektor-2-otopite100012259.html",
+    "sourceUri": "https://www.stout.ru/upload/iblock/9fb/ddr7g6feksm8icaodwln2b7u28qks3ar/%D0%9A%D0%BE%D0%BB%D0%BB%D0%B5%D0%BA%D1%82%D0%BE%D1%80%D1%8B%20%D1%82%D0%B8%D0%BF%20SDG%20%D0%A2%D0%B5%D1%85%20%D0%BF%D0%B0%D1%81%D0%BF%D0%BE%D1%80%D1%82%2030.03.2023.pdf",
     "retrievedAtIso": "2026-05-05T00:00:00.000Z",
     "status": "review_required",
-    "notes": "Публичная карточка товара указывает распределительный коллектор STOUT DN32 на 2 отопительных контура, артикул SDG-0016-005002, и ссылку на технический паспорт. Габариты и координаты патрубков требуют сверки с паспортом/чертежом."
+    "notes": "Паспорт STOUT от 30.03.2023 подтверждает тип SDG-0016, артикул SDG-0016-005002, рабочую среду, PN 4 бар, температуру до 110 °C, расход 6.5 м3/ч и габариты DN32-коллектора. Координаты патрубков в модели требуют сверки по графической схеме паспорта."
   },
   {
     "id": "src-gost-3262-75",

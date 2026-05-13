@@ -1,4 +1,5 @@
 import type {
+  DrawingEvidenceGap,
   DrawingEvidenceReport,
   DrawingEvidenceReportItem,
   EvidenceDataset,
@@ -8,12 +9,14 @@ import type {
 } from "@/domain/evidence";
 import type { EngineeringDrawing } from "@/domain/drawing";
 import type { EquipmentDefinition } from "@/domain/equipment/EquipmentDefinition";
+import { SystemConnectionResolver } from "@/domain/piping/SystemConnectionResolver";
 import type { Project } from "@/domain/project/Project";
 import { PilotKitCalculationService } from "@/infrastructure/calculation/PilotKitCalculationService";
 import { pilotPipeSpecs } from "@/shared/config/pilotKitSpecs";
 
 export class PilotDrawingEvidenceReportService {
   private readonly calculationService = new PilotKitCalculationService();
+  private readonly connectionResolver = new SystemConnectionResolver();
 
   create(
     drawing: EngineeringDrawing,
@@ -21,13 +24,18 @@ export class PilotDrawingEvidenceReportService {
     equipmentDefinitions: EquipmentDefinition[],
     dataset: EvidenceDataset,
   ): DrawingEvidenceReport {
+    const projectPassport = createProjectPassport(project, equipmentDefinitions);
+    const calculationItems = this.createCalculationItems(equipmentDefinitions);
     const items = [
+      this.createProjectItem(projectPassport, dataset),
       ...this.createEquipmentItems(project, equipmentDefinitions, dataset),
       ...this.createPipeItems(dataset),
       ...this.createValveItems(project, equipmentDefinitions, dataset),
-      ...this.createCalculationItems(equipmentDefinitions),
+      ...calculationItems,
+      this.createConnectionReviewItem(project, equipmentDefinitions),
       this.createDrawingItem(drawing, dataset),
     ];
+    const structuredMissingData = createStructuredMissingData(equipmentDefinitions, calculationItems);
 
     return {
       id: `${drawing.id}_evidence_report`,
@@ -35,17 +43,30 @@ export class PilotDrawingEvidenceReportService {
       title: `${drawing.metadata.title}. Отчет по источникам pilot kit`,
       status: "review_required",
       disclaimer: "Это evidence/status report: он показывает источники и недостающие данные, но не подтверждает соответствие ГОСТ/СП и не заменяет инженерную проверку.",
+      projectPassport,
       sourceDocumentIds: unique([
         ...drawing.metadata.sourceDocumentIds,
         ...items.flatMap((item) => item.sourceDocumentIds),
       ]),
       items,
-      missingData: [
-        "Координаты патрубков котла и коллекторов требуют сверки с заводскими чертежами.",
-        "Применимость STOUT DN32 как коллектора котельной требует инженерного подтверждения.",
-        "Трубы и арматура рассчитаны частично: есть расход/скорости, но нет потерь давления, насоса, прочностного расчета и полной газовой проверки.",
-        "Нормативная применимость ГОСТ/СП к конкретному объекту не оценивалась.",
-      ],
+      structuredMissingData,
+      missingData: structuredMissingData.map((item) => item.reason),
+    };
+  }
+
+  private createProjectItem(projectPassport: Record<string, string | number | boolean>, dataset: EvidenceDataset): DrawingEvidenceReportItem {
+    const evidence = collectEvidence(dataset, { kind: "project", id: "typical-standalone-boiler-room" });
+    return {
+      id: "project-passport",
+      kind: "project",
+      label: "Паспорт проекта и сценарий применимости",
+      target: { kind: "project", id: "pilot-kit" },
+      status: "review_required",
+      sourceDocumentIds: unique(["src-sp-89-13330-2016", ...evidence.sourceDocumentIds]),
+      requirementIds: evidence.requirementIds,
+      citationIds: evidence.citationIds,
+      facts: projectPassport,
+      limitations: [],
     };
   }
 
@@ -162,6 +183,28 @@ export class PilotDrawingEvidenceReportService {
     }));
   }
 
+  private createConnectionReviewItem(project: Project, equipmentDefinitions: EquipmentDefinition[]): DrawingEvidenceReportItem {
+    const systemConnections = this.connectionResolver.resolve(project, { equipmentDefinitions });
+    const connected = systemConnections.filter((connection) => connection.status === "connected").length;
+    const unresolved = systemConnections.filter((connection) => connection.status !== "connected").length;
+    return {
+      id: "connection-review",
+      kind: "connection_review",
+      label: "Логическая проверка соединений текущего состава",
+      target: { kind: "project", id: "pilot-kit" },
+      status: "review_required",
+      sourceDocumentIds: [],
+      requirementIds: [],
+      citationIds: [],
+      facts: {
+        connectionCount: systemConnections.length,
+        connectedCount: connected,
+        unresolvedCount: unresolved,
+      },
+      limitations: unresolved > 0 ? ["Есть логически незавершенные соединения; нужно проверить состав и связи проекта."] : [],
+    };
+  }
+
   private createDrawingItem(drawing: EngineeringDrawing, dataset: EvidenceDataset): DrawingEvidenceReportItem {
     const targets: EvidenceTarget[] = [
       { kind: "drawing_element", id: "pilot-sheet-pipes" },
@@ -231,3 +274,141 @@ const getDraftEvidenceStatus = (): EvidenceStatus => "review_required";
 const unique = <T>(values: T[]): T[] => Array.from(new Set(values));
 
 const isString = (value: string | undefined): value is string => typeof value === "string";
+
+const createProjectPassport = (
+  project: Project,
+  equipmentDefinitions: EquipmentDefinition[],
+): Record<string, string | number | boolean> => {
+  const boiler = equipmentDefinitions.find((definition) => definition.id === "rgt-100-ksva-100");
+  const boilerFacts = getEquipmentFacts(boiler);
+  return {
+    jurisdiction: "РФ",
+    boilerRoomType: stringifyMetadata(project.metadata.boilerRoomType) ?? "standalone_block",
+    objectPlacement: "отдельно стоящий блок",
+    boilerPlantType: "газовая водогрейная котельная",
+    reviewScope: "котел + 2 коллектора + трубы + запорная арматура",
+    fuelType: stringifyMetadata(project.metadata.fuelType) ?? stringifyFact(boilerFacts.fuelType) ?? "natural_gas",
+    heatCarrier: stringifyMetadata(project.metadata.heatCarrier) ?? "вода",
+    circulationType: stringifyMetadata(project.metadata.circulationType) ?? "принудительная",
+    totalHeatPowerKw: toNumber(project.metadata.totalHeatPowerKw) ?? toNumber(boilerFacts.nominalPowerKw) ?? 0,
+    designSupplyTemperatureC: toNumber(project.metadata.designSupplyTemperatureC) ?? 80,
+    designReturnTemperatureC: toNumber(project.metadata.designReturnTemperatureC) ?? 60,
+    designDeltaTC: (toNumber(project.metadata.designSupplyTemperatureC) ?? 80) - (toNumber(project.metadata.designReturnTemperatureC) ?? 60),
+    boilerCount: project.equipmentInstances.filter((instance) => instance.definitionId === "rgt-100-ksva-100").length,
+    headerCount: project.equipmentInstances.filter((instance) => {
+      const definition = equipmentDefinitions.find((item) => item.id === instance.definitionId);
+      return definition?.category === "header";
+    }).length,
+    valveCount: project.equipmentInstances.filter((instance) => {
+      const definition = equipmentDefinitions.find((item) => item.id === instance.definitionId);
+      return definition?.category === "valve";
+    }).length,
+  };
+};
+
+const createStructuredMissingData = (
+  equipmentDefinitions: EquipmentDefinition[],
+  calculationItems: DrawingEvidenceReportItem[],
+): DrawingEvidenceGap[] => {
+  const boiler = equipmentDefinitions.find((definition) => definition.id === "rgt-100-ksva-100");
+  const supplyHeader = equipmentDefinitions.find((definition) => definition.id === "supply-header");
+  const returnHeader = equipmentDefinitions.find((definition) => definition.id === "return-header");
+  const hydronicCalculation = calculationItems.find((item) => item.id === "calculation-calc-hydronic-flow");
+
+  return [
+    {
+      id: "gap-project-passport",
+      topic: "standards_applicability",
+      text: "Подтверждён ли базовый сценарий проверки для этого проекта?",
+      reason: "Сценарий проекта уже определён в модели: РФ, отдельно стоящий блок, газовая водогрейная котельная, один котёл, принудительная циркуляция, график 80/60 °C.",
+      target: { kind: "project", id: "pilot-kit" },
+      status: "review_required",
+      answerStatus: "closed_from_model",
+      suggestedAnswerFormat: "text",
+    },
+    {
+      id: "gap-boiler-geometry",
+      topic: "connection_geometry",
+      text: "Подтверждены ли координаты патрубков котла по заводскому чертежу? Укажите документ/страницу или корректные координаты.",
+      reason: getMetadataString(boiler?.metadata, "notes") ?? "Координаты патрубков котла требуют сверки с заводским чертежом.",
+      target: { kind: "equipment_definition", id: "rgt-100-ksva-100" },
+      status: "review_required",
+      answerStatus: "unknown",
+      suggestedAnswerFormat: "document_reference",
+    },
+    {
+      id: "gap-supply-header-geometry",
+      topic: "connection_geometry",
+      text: "Подтверждены ли координаты патрубков коллектора подачи по паспорту/чертежу производителя?",
+      reason: getMetadataString(supplyHeader?.metadata, "notes") ?? "Координаты патрубков коллектора подачи требуют сверки.",
+      target: { kind: "equipment_definition", id: "supply-header" },
+      status: "review_required",
+      answerStatus: "unknown",
+      suggestedAnswerFormat: "document_reference",
+    },
+    {
+      id: "gap-return-header-geometry",
+      topic: "connection_geometry",
+      text: "Подтверждены ли координаты патрубков коллектора обратки по паспорту/чертежу производителя?",
+      reason: getMetadataString(returnHeader?.metadata, "notes") ?? "Координаты патрубков коллектора обратки требуют сверки.",
+      target: { kind: "equipment_definition", id: "return-header" },
+      status: "review_required",
+      answerStatus: "unknown",
+      suggestedAnswerFormat: "document_reference",
+    },
+    {
+      id: "gap-collector-applicability",
+      topic: "collector_applicability",
+      text: "Подтверждена ли применимость выбранного коллектора к текущему сценарию котельной?",
+      reason: "Источник STOUT описывает распределительный коллектор для приема теплоносителя от источника тепловой энергии и распределения между системами теплопотребления здания; это закрывает тип изделия, но не заменяет инженерный выбор именно для данного объекта.",
+      target: { kind: "project", id: "pilot-kit" },
+      status: "review_required",
+      answerStatus: "closed_from_source",
+      suggestedAnswerFormat: "document_reference",
+    },
+    {
+      id: "gap-valve-source",
+      topic: "valve_selection",
+      text: "Подтверждён ли тип арматуры для текущих трубопроводов?",
+      reason: "Публичный паспорт кранов подтверждает наличие типоразмеров Ду25/Ду32 и применение в системах теплоснабжения, но не заменяет окончательный инженерный выбор способа присоединения и серии.",
+      target: { kind: "drawing_element", id: "pilot-sheet-valve-specs" },
+      status: "review_required",
+      answerStatus: "closed_from_source",
+      suggestedAnswerFormat: "document_reference",
+    },
+    {
+      id: "gap-hydronic-calculation",
+      topic: "pipe_hydraulic_calculation",
+      text: "Выполнен ли полный гидравлический расчёт с потерями давления и подбором насоса/арматуры?",
+      reason: hydronicCalculation?.limitations.join(" / ") ?? "Есть только предварительный расчёт расхода и скорости, без полного гидравлического расчёта.",
+      target: { kind: "project", id: "pilot-kit" },
+      status: "review_required",
+      answerStatus: "unknown",
+      suggestedAnswerFormat: "document_reference",
+    },
+    {
+      id: "gap-standards-set",
+      topic: "standards_applicability",
+      text: "Определён ли базовый набор нормативных и паспортных источников для этой проверки?",
+      reason: "Для текущего состава уже подобраны источники по котлу, коллектору, трубам, арматуре и чертёжным обозначениям; их применимость остаётся review_required, но базовый набор документов сформирован.",
+      target: { kind: "project", id: "pilot-kit" },
+      status: "review_required",
+      answerStatus: "closed_from_source",
+      suggestedAnswerFormat: "text",
+    },
+  ];
+};
+
+type BoilerFacts = {
+  nominalPowerKw?: number;
+  fuelType?: string;
+};
+
+const getEquipmentFacts = (definition: EquipmentDefinition | undefined): BoilerFacts => {
+  const facts = definition?.metadata?.extractedFacts;
+  return typeof facts === "object" && facts !== null ? facts as BoilerFacts : {};
+};
+
+const stringifyMetadata = (value: unknown): string | undefined => typeof value === "string" ? value : undefined;
+const stringifyFact = (value: unknown): string | undefined => typeof value === "string" ? value : undefined;
+const toNumber = (value: unknown): number | undefined => typeof value === "number" ? value : undefined;

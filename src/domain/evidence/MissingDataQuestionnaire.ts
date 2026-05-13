@@ -32,6 +32,7 @@ export type MissingDataQuestionnaire = {
   id: string;
   title: string;
   status: EvidenceStatus;
+  projectPassport?: Record<string, string | number | boolean>;
   questions: MissingDataQuestion[];
   closedQuestions: MissingDataQuestion[];
   fullReportQuestions: MissingDataQuestion[];

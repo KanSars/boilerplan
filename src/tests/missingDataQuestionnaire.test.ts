@@ -10,6 +10,7 @@ describe("missing data questionnaire", () => {
       title: "Pilot drawing report",
       status: "review_required",
       disclaimer: "not compliance",
+      projectPassport: { jurisdiction: "РФ", boilerRoomType: "standalone_block" },
       sourceDocumentIds: [],
       items: [
         {
@@ -23,6 +24,18 @@ describe("missing data questionnaire", () => {
           citationIds: ["cit-gost-3262-75-vgp-scope"],
           facts: { nominalDiameterMm: 32 },
           limitations: ["Pilot pipe spec не является гидравлическим расчетом."],
+        },
+      ],
+      structuredMissingData: [
+        {
+          id: "gap-1",
+          topic: "connection_geometry",
+          text: "Подтверждены ли координаты патрубков по заводскому чертежу?",
+          reason: "Координаты патрубков котла и коллекторов требуют сверки с заводскими чертежами.",
+          target: { kind: "drawing_element", id: "drawing-1" },
+          status: "review_required",
+          answerStatus: "unknown",
+          suggestedAnswerFormat: "document_reference",
         },
       ],
       missingData: [
@@ -40,6 +53,8 @@ describe("missing data questionnaire", () => {
     expect(questionnaire.questions.every((question) => question.answerStatus === "unknown")).toBe(true);
     expect(text).toContain("Вопросы для закрытия");
     expect(text).toContain("Нужно ответить");
+    expect(text).toContain("Паспорт текущего сценария");
+    expect(text).toContain("Юрисдикция: РФ");
     expect(text).toContain("Полный отчет");
     expect(text).toContain("Ответ:");
     expect(text).toContain("не подтверждение соответствия ГОСТ/СП");
@@ -52,6 +67,7 @@ describe("missing data questionnaire", () => {
       title: "Pilot drawing report",
       status: "review_required",
       disclaimer: "not compliance",
+      projectPassport: { jurisdiction: "РФ", boilerRoomType: "standalone_block" },
       sourceDocumentIds: [],
       items: [
         {
@@ -103,6 +119,7 @@ describe("missing data questionnaire", () => {
           limitations: ["Конкретная модель арматуры и ее применимость должны быть выбраны и проверены инженером."],
         },
       ],
+      structuredMissingData: [],
       missingData: [],
     };
 

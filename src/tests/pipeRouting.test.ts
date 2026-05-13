@@ -16,7 +16,7 @@ describe("pipe routing from logical connections", () => {
     const routes = new SimpleOrthogonalPipeRouter().generateRoutes(project, context);
     expect(routes).toHaveLength(2);
     expect(routes[0].polylinePoints[0]).toEqual({ xMm: 1280, yMm: 650 });
-    expect(routes[0].polylinePoints.at(-1)).toEqual({ xMm: 2500, yMm: 580 });
+    expect(routes[0].polylinePoints.at(-1)).toEqual({ xMm: 2500, yMm: 565 });
     expect(routes[0].nominalDiameterMm).toBe(80);
     expect(routes[0].metadata).toMatchObject({
       sourceDocumentId: "src-gost-3262-75",

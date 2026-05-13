@@ -21,5 +21,9 @@ export const createInitialProject = (): Project => ({
     boilerRoomType: "standalone_block",
     fuelType: "natural_gas",
     totalHeatPowerKw: 99,
+    heatCarrier: "water",
+    circulationType: "forced",
+    designSupplyTemperatureC: 80,
+    designReturnTemperatureC: 60,
   },
 });

@@ -180,7 +180,7 @@ export function BoilerRoomEditor() {
       <section className="workspace">
         <ExportPanel
           onGenerateRoutes={() => dispatch(setPipingRoutes(pipeRouter.generateRoutes(project, exportContext)))}
-          onValidate={() => undefined}
+          onValidate={() => setMissingQuestionsOpen(true)}
           onExportJson={() => downloadTextFile("boiler-room-project.json", jsonExporter.export(projectWithValidation, exportContext), "application/json")}
           onExportSvg={() => downloadTextFile("boiler-room-layout.svg", svgExporter.export(projectWithValidation, exportContext), "image/svg+xml")}
           onExportSheetSvg={() => downloadTextFile("boiler-room-sheet.svg", sheetSvgExporter.export(sheetDrawing), "image/svg+xml")}

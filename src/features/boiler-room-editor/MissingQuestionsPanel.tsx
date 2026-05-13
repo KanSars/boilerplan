@@ -19,6 +19,19 @@ export function MissingQuestionsPanel({ questionnaire }: Props) {
           <span className="badge info">Закрыто: {questionnaire.closedQuestions.length}</span>
         </div>
       </div>
+      {questionnaire.projectPassport && (
+        <div className="missing-question passport">
+          <strong>Паспорт текущего сценария</strong>
+          <p>
+            {String(questionnaire.projectPassport.jurisdiction ?? "РФ")},{" "}
+            {String(questionnaire.projectPassport.objectPlacement ?? "отдельно стоящий блок")},{" "}
+            {String(questionnaire.projectPassport.boilerPlantType ?? "газовая водогрейная котельная")},{" "}
+            {String(questionnaire.projectPassport.totalHeatPowerKw ?? "0")} кВт,{" "}
+            график {String(questionnaire.projectPassport.designSupplyTemperatureC ?? "80")}/
+            {String(questionnaire.projectPassport.designReturnTemperatureC ?? "60")} °C.
+          </p>
+        </div>
+      )}
       <div className="missing-question-list">
         {questionnaire.questions.map((question, index) => (
           <article className="missing-question" key={question.id}>

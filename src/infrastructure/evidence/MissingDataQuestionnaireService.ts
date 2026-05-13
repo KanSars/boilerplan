@@ -8,15 +8,15 @@ import type {
 export class MissingDataQuestionnaireService {
   create(report: DrawingEvidenceReport): MissingDataQuestionnaire {
     const fullReportQuestions = [
-      ...report.missingData.map((item, index) => ({
-        id: `missing-data-${index + 1}`,
-        topic: classifyTopic(item),
-        text: toQuestionText(item),
-        reason: item,
-        target: { kind: "drawing_element" as const, id: report.drawingId },
-        status: "review_required" as const,
-        answerStatus: "unknown" as const,
-        suggestedAnswerFormat: guessAnswerFormat(item),
+      ...report.structuredMissingData.map((item) => ({
+        id: item.id,
+        topic: item.topic,
+        text: item.text,
+        reason: item.reason,
+        target: item.target,
+        status: item.status,
+        answerStatus: item.answerStatus,
+        suggestedAnswerFormat: item.suggestedAnswerFormat,
       })),
       ...report.items.flatMap((item) => createItemQuestions(item)),
     ];
@@ -28,6 +28,7 @@ export class MissingDataQuestionnaireService {
       id: `${report.id}_questions`,
       title: "Вопросы для закрытия перед инженерной проверкой",
       status: "review_required",
+      projectPassport: report.projectPassport,
       questions,
       closedQuestions,
       fullReportQuestions,
@@ -43,6 +44,12 @@ export const formatMissingDataQuestionnaireText = (questionnaire: MissingDataQue
     "",
     "Статус: требуется проверка",
     "Назначение: заполнить недостающие исходные данные. Это не подтверждение соответствия ГОСТ/СП.",
+    "",
+    "Паспорт текущего сценария",
+    "",
+    ...(questionnaire.projectPassport
+      ? Object.entries(questionnaire.projectPassport).map(([key, value]) => `- ${translatePassportKey(key)}: ${String(value)}`)
+      : ["Паспорт проекта не сформирован."]),
     "",
     "Нужно ответить",
     "",
@@ -210,3 +217,24 @@ const translateTopic = (topic: MissingDataQuestion["topic"]): string => {
 };
 
 const unique = <T>(values: T[]): T[] => Array.from(new Set(values));
+
+const translatePassportKey = (key: string): string => {
+  const labels: Record<string, string> = {
+    jurisdiction: "Юрисдикция",
+    boilerRoomType: "Тип котельной",
+    objectPlacement: "Размещение объекта",
+    boilerPlantType: "Тип объекта",
+    reviewScope: "Состав проверки",
+    fuelType: "Топливо",
+    heatCarrier: "Теплоноситель",
+    circulationType: "Циркуляция",
+    totalHeatPowerKw: "Суммарная мощность, кВт",
+    designSupplyTemperatureC: "Подача, °C",
+    designReturnTemperatureC: "Обратка, °C",
+    designDeltaTC: "ΔT, °C",
+    boilerCount: "Количество котлов",
+    headerCount: "Количество коллекторов",
+    valveCount: "Количество кранов",
+  };
+  return labels[key] ?? key;
+};

@@ -37,8 +37,12 @@ describe("pilot drawing evidence report", () => {
     expect(report.items.some((item) => item.kind === "valve" && item.label.includes("DN32"))).toBe(true);
     expect(report.items.some((item) => item.kind === "calculation" && item.id === "calculation-calc-hydronic-flow")).toBe(true);
     expect(report.items.some((item) => item.kind === "calculation" && item.id === "calculation-calc-gas-velocity")).toBe(true);
+    expect(report.items.some((item) => item.kind === "project" && item.id === "project-passport")).toBe(true);
     expect(report.items.every((item) => item.status === "review_required")).toBe(true);
-    expect(report.missingData).toContain("Координаты патрубков котла и коллекторов требуют сверки с заводскими чертежами.");
+    expect(report.projectPassport.jurisdiction).toBe("РФ");
+    expect(report.projectPassport.circulationType).toBe("принудительная");
+    expect(report.structuredMissingData.some((item) => item.id === "gap-boiler-geometry" && item.answerStatus === "unknown")).toBe(true);
+    expect(report.structuredMissingData.some((item) => item.id === "gap-collector-applicability" && item.answerStatus === "closed_from_source")).toBe(true);
   });
 
   it("links report items back to evidence requirements and citations", () => {

@@ -2,9 +2,13 @@ export type { ApplicabilityCondition } from "@/domain/evidence/ApplicabilityCond
 export type { CompiledRule, CompiledRuleKind } from "@/domain/evidence/CompiledRule";
 export type { DocumentCitation } from "@/domain/evidence/DocumentCitation";
 export type {
+  DrawingEvidenceGap,
+  DrawingEvidenceGapAnswerFormat,
+  DrawingEvidenceGapAnswerStatus,
   DrawingEvidenceReport,
   DrawingEvidenceReportItem,
   DrawingEvidenceReportItemKind,
+  DrawingEvidenceGapTopic,
 } from "@/domain/evidence/DrawingEvidenceReport";
 export type { EvidenceDataset } from "@/domain/evidence/EvidenceDataset";
 export type { EvidenceLink, EvidenceLinkRelation } from "@/domain/evidence/EvidenceLink";
