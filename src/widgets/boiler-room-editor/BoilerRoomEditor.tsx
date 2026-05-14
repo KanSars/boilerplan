@@ -24,6 +24,7 @@ import { DxfProjectExporter } from "@/infrastructure/exporters/DxfProjectExporte
 import { JsonProjectExporter } from "@/infrastructure/exporters/JsonProjectExporter";
 import { SvgProjectExporter } from "@/infrastructure/exporters/SvgProjectExporter";
 import { SimpleOrthogonalPipeRouter } from "@/infrastructure/piping/SimpleOrthogonalPipeRouter";
+import { EngineeringReviewService, formatEngineeringReviewReportText } from "@/infrastructure/review/EngineeringReviewService";
 import { downloadTextFile } from "@/lib/download";
 import { createId } from "@/lib/ids";
 import { resetEquipmentCatalogToMockDefaults, updateEquipmentDefinition } from "@/store/catalogSlice";
@@ -72,6 +73,7 @@ const dxfExporter = new DxfProjectExporter();
 const aiExplainer = new MockAiValidationExplainer();
 const evidenceReportService = new PilotDrawingEvidenceReportService();
 const missingDataQuestionnaireService = new MissingDataQuestionnaireService();
+const engineeringReviewService = new EngineeringReviewService();
 
 export function BoilerRoomEditor() {
   const dispatch = useAppDispatch();
@@ -103,6 +105,10 @@ export function BoilerRoomEditor() {
   const missingDataQuestionnaire = useMemo(
     () => missingDataQuestionnaireService.create(drawingEvidenceReport),
     [drawingEvidenceReport],
+  );
+  const engineeringReviewReport = useMemo(
+    () => engineeringReviewService.create(projectWithValidation, equipmentDefinitions, validationIssues, drawingEvidenceReport),
+    [drawingEvidenceReport, equipmentDefinitions, projectWithValidation, validationIssues],
   );
 
   const deleteSelectedEquipment = useCallback(() => {
@@ -186,6 +192,7 @@ export function BoilerRoomEditor() {
           onExportSheetSvg={() => downloadTextFile("boiler-room-sheet.svg", sheetSvgExporter.export(sheetDrawing), "image/svg+xml")}
           onExportCsv={() => downloadTextFile("equipment-schedule.csv", csvExporter.export(projectWithValidation, exportContext), "text/csv")}
           onExportDxf={() => downloadTextFile("boiler-room-sheet.dxf", dxfExporter.export(projectWithValidation, exportContext), "application/dxf")}
+          onExportReview={() => downloadTextFile("boiler-room-engineering-review.txt", formatEngineeringReviewReportText(engineeringReviewReport), "text/plain;charset=utf-8")}
           onToggleMissingQuestions={() => setMissingQuestionsOpen((open) => !open)}
           onExportMissingQuestions={() => downloadTextFile("boiler-room-open-questions.txt", formatMissingDataQuestionnaireText(missingDataQuestionnaire), "text/plain;charset=utf-8")}
           missingQuestionsOpen={missingQuestionsOpen}
@@ -290,7 +297,7 @@ export function BoilerRoomEditor() {
               }}
               onDelete={deleteSelectedEquipment}
             />
-            <ValidationPanel issues={validationIssues} aiExplanation={aiExplanation} />
+            <ValidationPanel issues={validationIssues} aiExplanation={aiExplanation} reviewReport={engineeringReviewReport} />
           </>
         )}
       </aside>

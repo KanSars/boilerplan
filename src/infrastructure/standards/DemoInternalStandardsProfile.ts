@@ -5,6 +5,7 @@ import { EquipmentBodyCollisionRule } from "@/infrastructure/standards/rules/Equ
 import { EquipmentInsideRoomRule } from "@/infrastructure/standards/rules/EquipmentInsideRoomRule";
 import { PlaceholderEngineeringComplianceWarningRule } from "@/infrastructure/standards/rules/PlaceholderEngineeringComplianceWarningRule";
 import { RequiredHydronicConnectionsRule } from "@/infrastructure/standards/rules/RequiredHydronicConnectionsRule";
+import { RequiredPilotKitElementsRule } from "@/infrastructure/standards/rules/RequiredPilotKitElementsRule";
 import { RequiredConnectionPointsRule } from "@/infrastructure/standards/rules/RequiredConnectionPointsRule";
 import { ServiceClearanceCollisionRule } from "@/infrastructure/standards/rules/ServiceClearanceCollisionRule";
 
@@ -18,6 +19,7 @@ export const DemoInternalStandardsProfile: StandardsProfile = {
     EquipmentInsideRoomRule,
     EquipmentBodyCollisionRule,
     ServiceClearanceCollisionRule,
+    RequiredPilotKitElementsRule,
     RequiredConnectionPointsRule,
     RequiredHydronicConnectionsRule,
     AmbiguousConnectionRule,

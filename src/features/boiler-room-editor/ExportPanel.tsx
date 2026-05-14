@@ -8,6 +8,7 @@ type Props = {
   onExportSheetSvg: () => void;
   onExportCsv: () => void;
   onExportDxf: () => void;
+  onExportReview: () => void;
   onToggleMissingQuestions: () => void;
   onExportMissingQuestions: () => void;
   missingQuestionsOpen: boolean;
@@ -22,6 +23,7 @@ export function ExportPanel({
   onExportSheetSvg,
   onExportCsv,
   onExportDxf,
+  onExportReview,
   onToggleMissingQuestions,
   onExportMissingQuestions,
   missingQuestionsOpen,
@@ -38,6 +40,7 @@ export function ExportPanel({
       <button onClick={onExportSheetSvg}>Экспорт SVG листа</button>
       <button onClick={onExportCsv}>Экспорт CSV</button>
       <button onClick={onExportDxf}>Экспорт DXF</button>
+      <button onClick={onExportReview}>Выгрузить проверку</button>
     </div>
   );
 }

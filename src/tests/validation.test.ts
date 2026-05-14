@@ -39,4 +39,15 @@ describe("validation", () => {
     const issues = engine.validate(project, { equipmentDefinitions: [brokenDefinition] });
     expect(issues.some((issue) => issue.ruleId === "required_connection_points" && issue.severity === "error")).toBe(true);
   });
+
+  it("creates an error when the minimal pilot kit is incomplete", () => {
+    const project = makeProject();
+    project.equipmentInstances = [
+      { id: "inst_boiler_1", definitionId: "rgt-100-ksva-100", position: { xMm: 1550, yMm: 2850 }, rotationDeg: 0, label: "К1" },
+      { id: "inst_supply_header", definitionId: "supply-header", position: { xMm: 900, yMm: 700 }, rotationDeg: 0, label: "Коллектор подачи" },
+    ];
+
+    const issues = engine.validate(project, { equipmentDefinitions: definitions });
+    expect(issues.some((issue) => issue.ruleId === "required_pilot_kit_elements" && issue.severity === "error")).toBe(true);
+  });
 });
